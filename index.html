@@ -6,6 +6,7 @@
 <title>Covenant</title>
   <link rel="icon" type="image/svg+xml" href="favicon/favicon-01-serif-c.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&family=DM+Mono&family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;600&family=Noto+Serif+SC:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
@@ -46,7 +47,9 @@ nav {
 
 /* ════════════ HOME VIEW ════════════ */
 #home-view { height: calc(100vh - 54px); display: flex; flex-direction: column; overflow: hidden; }
-
+#reader-view { display: none; }
+#reader-view.fading-in { animation: readerFadeIn 0.22s ease both; }
+@keyframes readerFadeIn { from { opacity: 0; } to { opacity: 1; } }
 /* Tabs */
 .home-tabs {
   display: flex; border-bottom: 1px solid var(--border);
@@ -671,10 +674,10 @@ nav {
 .bm-label { font-size: 0.75rem; color: var(--text); flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .bm-del { background: none; border: none; color: #444; cursor: pointer; font-size: 0.75rem; flex-shrink: 0; padding: 2px 4px; border-radius: 3px; }
 .bm-del:hover { color: var(--accent); }
-.loading { display: none; position: fixed; inset: 0; background: rgba(14,14,14,0.92); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 14px; }
-.loading.show { display: flex; }
-.spinner { width: 28px; height: 28px; border: 2px solid #2a2a2a; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
-.loading-text { font-size: 0.75rem; color: var(--muted); }
+.loading { display: flex; position: fixed; inset: 0; background: rgba(14,14,14,0.85); z-index: 300; align-items: center; justify-content: center; flex-direction: column; gap: 14px; opacity: 0; pointer-events: none; transition: opacity 0.18s ease; }
+.loading.show { opacity: 1; pointer-events: all; }
+.spinner { width: 24px; height: 24px; border: 2px solid #2a2a2a; border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+.loading-text { font-size: 0.72rem; color: var(--muted2); letter-spacing: 0.03em; }
 
 /* ════════════ ANIMATIONS ════════════ */
 @keyframes spin { to { transform: rotate(360deg); } }
@@ -2923,7 +2926,7 @@ function _kvOpen() {
       if (!db.objectStoreNames.contains(_KV_STORE))
         db.createObjectStore(_KV_STORE);
     };
-    req.onsuccess = e => { _kvDb = e.target.result; resolve(_kvDb); };
+    req.onsuccess = e => { _kvDb = e.target.result; _kvDb.onversionchange = () => { _kvDb.close(); _kvDb = null; }; resolve(_kvDb); };
     req.onerror   = e => reject(e.target.error);
   });
 }
@@ -3033,12 +3036,16 @@ function openDB() {
     };
     req.onsuccess = async e => {
       db = e.target.result;
+      // Gracefully close this connection if another tab/reload tries to upgrade,
+      // preventing the new open() from being blocked indefinitely (critical for VS Code Live Server).
+      db.onversionchange = () => { db.close(); db = null; };
       // One-time migration from pera-db-2 if it exists and pera-db-3 is empty
       try { await migrateFromV2(); } catch(me) { console.warn('Migration skipped:', me); }
       resolve(db);
     };
     req.onerror = e => reject(e.target.error);
-    req.onblocked = () => {}; // ignored — fresh DB name never blocks
+    // If blocked by a stale connection, reload to get a clean slate (handles VS Code Live Server hot-reloads).
+    req.onblocked = () => { window.location.reload(); };
   });
 }
 
@@ -4509,6 +4516,10 @@ function splitSentences(text) {
 async function parseEpub(file) {
   setLoading(true, 'Parsing EPUB…');
 
+  if (typeof JSZip === 'undefined') {
+    throw new Error('JSZip library not loaded. Please check your internet connection and reload the page.');
+  }
+
   // ── 0. Basic validation — confirm it's a valid EPUB ZIP ──
   let zip;
   try {
@@ -5123,7 +5134,10 @@ async function renderReader(bookTitle) {
   loadChapter(lastChap);
 
   document.getElementById('home-view').style.display   = 'none';
-  document.getElementById('reader-view').style.display = 'block';
+  const rv = document.getElementById('reader-view');
+  rv.style.display = 'block';
+  rv.classList.add('fading-in');
+  setTimeout(() => rv.classList.remove('fading-in'), 250);
   const navBtn = document.getElementById('nav-settings-btn');
   if (navBtn) navBtn.style.display = 'none';
   const navUpload = document.getElementById('nav-upload-btn');
@@ -5444,9 +5458,19 @@ document.addEventListener('keydown', e => {
 // ════════════════════════════════════════════════════
 // LOADING
 // ════════════════════════════════════════════════════
+let _loadingTimer = null;
 function setLoading(show, msg) {
-  document.getElementById('loading').classList.toggle('show', show);
-  if (msg) document.getElementById('loading-text').textContent = msg;
+  const el = document.getElementById('loading');
+  const txt = document.getElementById('loading-text');
+  if (show) {
+    if (msg && txt) txt.textContent = msg;
+    // Only show the overlay if loading takes longer than 300ms — eliminates flash on fast opens
+    clearTimeout(_loadingTimer);
+    _loadingTimer = setTimeout(() => { el.classList.add('show'); }, 300);
+  } else {
+    clearTimeout(_loadingTimer);
+    el.classList.remove('show');
+  }
 }
 
 // ════════════════════════════════════════════════════
@@ -5508,7 +5532,7 @@ function _csvOpenDb() {
       if (!d.objectStoreNames.contains(CSV_IDB_STORE))
         d.createObjectStore(CSV_IDB_STORE, { keyPath: 'name' });
     };
-    req.onsuccess = e => { _csvDb = e.target.result; resolve(_csvDb); };
+    req.onsuccess = e => { _csvDb = e.target.result; _csvDb.onversionchange = () => { _csvDb.close(); _csvDb = null; }; resolve(_csvDb); };
     req.onerror = e => reject(e.target.error);
   });
 }
@@ -6812,6 +6836,7 @@ function tipSidebarShow(span, set, entry, lv, wordKey) {
 function hlShowTip(span) {
   // Mined spans have their own tooltip
   if (span.dataset.si === MINED_SI) { hlShowMinedTip(span); return; }
+  // Ignored words CAN open the tooltip (so the user can unignore them)
   // Hide hover-def tooltip when full tooltip opens
   _hideHoverDef();
 
@@ -8007,7 +8032,7 @@ document.addEventListener('keydown', e => {
     return;
   }
 
-  if (!_tipOpenSpan) return;
+  if (!_tipOpenSpan && !_tipSidebarOpen) return;
   const tag = document.activeElement?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
@@ -8044,16 +8069,24 @@ document.addEventListener('keydown', e => {
       if (pinBtn) pinBtn.classList.toggle('pinned', _tipPinned);
     }
     // M — toggle Focus (mine to study list)
+    // Routes to sidebar button (#tsb-btn-focus) or floating tip button (#tip-btn-focus)
     if (e.key === 'm' || e.key === 'M') {
       e.preventDefault();
-      const focusBtn = _tip.querySelector('#tip-btn-focus');
-      if (focusBtn) focusBtn.click();
+      if (peraSettings.sidebarTooltip) {
+        document.querySelector('#tsb-body #tsb-btn-focus')?.click();
+      } else {
+        _tip.querySelector('#tip-btn-focus')?.click();
+      }
     }
     // I — toggle Ignore for this word
+    // Routes to sidebar button (#tsb-btn-ignore) or floating tip button (#tip-btn-hl-ignore)
     if (e.key === 'i' || e.key === 'I') {
       e.preventDefault();
-      const ignBtn = _tip.querySelector('#tip-btn-hl-ignore');
-      if (ignBtn) ignBtn.click();
+      if (peraSettings.sidebarTooltip) {
+        document.querySelector('#tsb-body #tsb-btn-ignore')?.click();
+      } else {
+        _tip.querySelector('#tip-btn-hl-ignore')?.click();
+      }
     }
     if (e.key === 'Shift' && peraSettings.dictEnabled) {
       e.preventDefault();
@@ -11774,14 +11807,14 @@ header{
 ::-webkit-scrollbar{width:6px;}
 ::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:3px;}
 </style>
-</head>
+<\/head>
 <body>
 <header>
   <span class="hdr-logo">Covenant <em>·</em></span>
   <span class="hdr-scope">${scope} Unique Words</span>
   <span class="hdr-cov">${coverage}</span>
   <span class="hdr-count" id="hdr-count">${words.length} words</span>
-</header>
+<\/header>
 <div class="toolbar">
   <input class="tb-search" type="text" placeholder="Filter words…" id="tb-search" oninput="filterGrid()">
   <div class="tb-sep"></div>
@@ -11941,8 +11974,8 @@ function downloadCSV() {
 
 renderGrid(getFiltered());
 <\/script>
-</body>
-</html>`;
+<\/body>
+<\/html>`;
 
   const win = window.open('', '_blank');
   if (!win) { hlToast('⚠ Pop-up blocked — allow pop-ups for this page'); return; }
