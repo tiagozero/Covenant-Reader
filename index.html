@@ -1395,6 +1395,7 @@ nav {
 .cs-rule-note { font-size: 0.65rem; color: var(--muted2); margin-left: 6px; }
 .cs-rule-del { background: none; border: none; color: var(--muted); cursor: pointer; padding: 2px 6px; border-radius: 5px; font-size: 0.75rem; flex-shrink: 0; }
 .cs-rule-del:hover { color: var(--accent); }
+.cs-rule-edit:hover { color: #4ade80 !important; }
 
 
 /* ════════════ TOOLTIP SIDEBAR ════════════ */
@@ -11056,14 +11057,33 @@ function csRulesImportCSV(input) {
   if (!file) return;
   const reader = new FileReader();
   reader.onload = e => {
-    const lines = e.target.result.split(/\r?\n/).filter(Boolean);
+    // Parse CSV respecting quoted fields (e.g. "want to","wanna","note with, comma")
+    function parseCSVLine(line) {
+      const fields = [];
+      let cur = '', inQuote = false;
+      for (let i = 0; i < line.length; i++) {
+        const ch = line[i];
+        if (ch === '"') {
+          if (inQuote && line[i+1] === '"') { cur += '"'; i++; } // escaped quote
+          else inQuote = !inQuote;
+        } else if (ch === ',' && !inQuote) {
+          fields.push(cur.trim()); cur = '';
+        } else {
+          cur += ch;
+        }
+      }
+      fields.push(cur.trim());
+      return fields;
+    }
+    const lines = e.target.result.split(/\r?\n/).filter(l => l.trim());
     const rules = csRulesLoad();
     let added = 0, skipped = 0;
     lines.forEach(line => {
-      const [orig, form, ...noteParts] = line.split(',').map(s => s.trim());
+      const fields = parseCSVLine(line);
+      const orig = fields[0], form = fields[1], note = (fields.slice(2).join(',') || '').trim();
       if (!orig || !form) { skipped++; return; }
       if (rules.some(r => r.orig.toLowerCase() === orig.toLowerCase())) { skipped++; return; }
-      rules.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), orig, form, note: noteParts.join(',').trim(), enabled: true, ts: Date.now() });
+      rules.push({ id: Date.now().toString(36) + Math.random().toString(36).slice(2,5), orig, form, note, enabled: true, ts: Date.now() });
       added++;
     });
     csRulesSave(rules);
@@ -11160,8 +11180,12 @@ function csRulesRender() {
     const hits      = _csMatchCounts[r.orig.toLowerCase()] || 0;
     const row = document.createElement('div');
     row.className = 'cs-rule-row';
-    row.style.opacity = isEnabled ? '1' : '0.45';
-    row.innerHTML = `
+    row.style.cssText = `opacity:${isEnabled ? '1' : '0.45'};flex-direction:column;gap:0;`;
+
+    // ── View row ──
+    const viewDiv = document.createElement('div');
+    viewDiv.style.cssText = 'display:flex;align-items:center;gap:12px;width:100%;';
+    viewDiv.innerHTML = `
       <div style="flex:1;min-width:0;">
         <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;">
           <span class="cs-rule-orig">${esc(r.orig)}</span>
@@ -11175,11 +11199,39 @@ function csRulesRender() {
         <div class="pera-tog${isEnabled?' on':''}" data-rid="${esc(r.id)}" title="${isEnabled?'Disable rule':'Enable rule'}" style="cursor:pointer;width:28px;height:16px;flex-shrink:0;">
           <div class="pera-tog-track"><div class="pera-tog-thumb" style="width:10px;height:10px;left:2px;top:2px;"></div></div>
         </div>
+        <button class="cs-rule-edit" title="Edit rule" data-rid="${esc(r.id)}" style="background:none;border:none;color:var(--muted);cursor:pointer;padding:2px 6px;border-radius:5px;font-size:0.75rem;flex-shrink:0;transition:color 0.12s;">✎</button>
         <button class="cs-rule-del" title="Delete rule" data-rid="${esc(r.id)}">✕</button>
       </div>`;
 
+    // ── Edit row (hidden by default) ──
+    const editDiv = document.createElement('div');
+    editDiv.style.cssText = 'display:none;padding:10px 14px 12px;background:var(--surface2);border-top:1px solid var(--border);width:100%;';
+    editDiv.innerHTML = `
+      <div style="font-size:0.62rem;font-weight:700;text-transform:uppercase;letter-spacing:0.09em;color:#4ade80;margin-bottom:8px;">Edit Rule</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:8px;">
+        <div>
+          <div style="font-size:0.6rem;color:var(--muted);margin-bottom:4px;">Original phrase</div>
+          <input class="csr-edit-orig" value="${esc(r.orig)}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:0.78rem;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#4ade80'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+        <div>
+          <div style="font-size:0.6rem;color:var(--muted);margin-bottom:4px;">Connected form</div>
+          <input class="csr-edit-form" value="${esc(r.form)}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:0.78rem;color:#f59e0b;font-style:italic;font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#f59e0b'" onblur="this.style.borderColor='var(--border)'">
+        </div>
+      </div>
+      <div style="margin-bottom:10px;">
+        <div style="font-size:0.6rem;color:var(--muted);margin-bottom:4px;">Note (optional)</div>
+        <input class="csr-edit-note" value="${esc(r.note||'')}" style="width:100%;background:var(--surface);border:1px solid var(--border);border-radius:6px;padding:6px 9px;font-size:0.78rem;color:var(--text);font-family:'DM Sans',sans-serif;outline:none;" onfocus="this.style.borderColor='#4ade80'" onblur="this.style.borderColor='var(--border)'">
+      </div>
+      <div style="display:flex;gap:7px;">
+        <button class="csr-save-btn" style="background:#4ade80;color:#0a1a0a;border:none;border-radius:7px;font-size:0.72rem;font-weight:700;padding:6px 16px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.12s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Save</button>
+        <button class="csr-cancel-btn" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.72rem;padding:6px 14px;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.12s;" onmouseover="this.style.borderColor='#444'" onmouseout="this.style.borderColor='var(--border)'">Cancel</button>
+      </div>`;
+
+    row.appendChild(viewDiv);
+    row.appendChild(editDiv);
+
     // Toggle enabled state
-    row.querySelector('.pera-tog').addEventListener('click', () => {
+    viewDiv.querySelector('.pera-tog').addEventListener('click', () => {
       const all = csRulesLoad();
       const idx = all.findIndex(x => x.id === r.id);
       if (idx === -1) return;
@@ -11189,8 +11241,55 @@ function csRulesRender() {
       if (peraSettings.csActive && document.getElementById('reader-view')?.style.display === 'block') csApplyHighlights();
     });
 
+    // Open edit row
+    viewDiv.querySelector('.cs-rule-edit').addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = editDiv.style.display !== 'none';
+      // Close any other open edit rows first
+      list.querySelectorAll('.csr-edit-area').forEach(el => { el.style.display = 'none'; });
+      editDiv.style.display = isOpen ? 'none' : '';
+      editDiv.classList.toggle('csr-edit-area', !isOpen);
+      if (!isOpen) editDiv.querySelector('.csr-edit-orig').focus();
+    });
+    editDiv.classList.add('csr-edit-area');
+
+    // Save edit
+    editDiv.querySelector('.csr-save-btn').addEventListener('click', () => {
+      const newOrig = editDiv.querySelector('.csr-edit-orig').value.trim();
+      const newForm = editDiv.querySelector('.csr-edit-form').value.trim();
+      const newNote = editDiv.querySelector('.csr-edit-note').value.trim();
+      if (!newOrig || !newForm) { hlToast('⚠ Original and Connected form are required'); return; }
+      const all = csRulesLoad();
+      const idx = all.findIndex(x => x.id === r.id);
+      if (idx === -1) { hlToast('⚠ Rule not found'); return; }
+      // Check duplicate (excluding self)
+      if (all.some((x, i) => i !== idx && x.orig.toLowerCase() === newOrig.toLowerCase())) {
+        hlToast('⚠ A rule for "' + newOrig + '" already exists'); return;
+      }
+      all[idx].orig = newOrig;
+      all[idx].form = newForm;
+      all[idx].note = newNote;
+      csRulesSave(all);
+      hlToast('✓ Rule updated: "' + newOrig + '" → "' + newForm + '"');
+      csRulesRender();
+      if (peraSettings.csActive && document.getElementById('reader-view')?.style.display === 'block') csApplyHighlights();
+    });
+
+    // Cancel edit
+    editDiv.querySelector('.csr-cancel-btn').addEventListener('click', () => {
+      editDiv.style.display = 'none';
+    });
+
+    // Enter key to save in edit inputs
+    editDiv.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter') { e.preventDefault(); editDiv.querySelector('.csr-save-btn').click(); }
+        if (e.key === 'Escape') { e.preventDefault(); editDiv.style.display = 'none'; }
+      });
+    });
+
     // Delete rule
-    row.querySelector('.cs-rule-del').addEventListener('click', () => {
+    viewDiv.querySelector('.cs-rule-del').addEventListener('click', () => {
       const all = csRulesLoad().filter(x => x.id !== r.id);
       csRulesSave(all);
       csRulesRender();
@@ -12894,6 +12993,7 @@ function refreshUwordsIfOpen() {
     'pera-uwords-seen',
     'pera-uwords-trend',
     'pera-word-notes',
+    'pera-cs-rules',
   ]);
   settingsLoad();
   // Migrate legacy lightMode to theme
