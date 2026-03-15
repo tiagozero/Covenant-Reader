@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Covenant</title>
-  <link rel="icon" type="image/svg+xml" href="favicon/favicon-01-serif-c.svg">
+  <link rel="icon" type="image/svg+xml" href="favicon-01-serif-c.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&family=DM+Mono&family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;600&family=Noto+Serif+SC:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet">
@@ -1204,9 +1204,9 @@ nav {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.1em;
-  color: #f59e0b;
-  background: rgba(245,158,11,0.12);
-  border: 1px solid rgba(245,158,11,0.28);
+  color: var(--cst-accent, #f59e0b);
+  background: var(--cst-bg, rgba(245,158,11,0.12));
+  border: 1px solid var(--cst-border, rgba(245,158,11,0.28));
   padding: 2px 8px;
   border-radius: 20px;
 }
@@ -1247,7 +1247,7 @@ nav {
 #cs-click-tip .csct-form {
   font-size: 0.87rem;
   font-weight: 600;
-  color: #f59e0b;
+  color: var(--cst-accent, #f59e0b);
   font-style: italic;
 }
 #cs-click-tip .csct-foot {
@@ -1256,17 +1256,17 @@ nav {
 #cs-click-tip .csct-edit-btn {
   width: 100%;
   padding: 6px 0;
-  background: rgba(245,158,11,0.12);
-  border: 1px solid rgba(245,158,11,0.3);
+  background: var(--cst-bg, rgba(245,158,11,0.12));
+  border: 1px solid var(--cst-border, rgba(245,158,11,0.3));
   border-radius: 7px;
-  color: #f59e0b;
+  color: var(--cst-accent, #f59e0b);
   font-size: 0.73rem;
   font-weight: 600;
   cursor: pointer;
   font-family: 'DM Sans', sans-serif;
   transition: background 0.12s;
 }
-#cs-click-tip .csct-edit-btn:hover { background: rgba(245,158,11,0.22); }
+#cs-click-tip .csct-edit-btn:hover { background: var(--cst-bg-hover, rgba(245,158,11,0.22)); }
 
 /* edit mode */
 #cs-click-tip .csct-edit-area {
@@ -1295,8 +1295,8 @@ nav {
   outline: none;
   transition: border-color 0.15s;
 }
-#cs-click-tip .csct-inp:focus { border-color: #f59e0b; }
-#cs-click-tip .csct-inp.inp-form { color: #f59e0b; font-style: italic; }
+#cs-click-tip .csct-inp:focus { border-color: var(--cst-accent, #f59e0b); }
+#cs-click-tip .csct-inp.inp-form { color: var(--cst-accent, #f59e0b); font-style: italic; }
 #cs-click-tip .csct-edit-btns {
   display: flex;
   gap: 6px;
@@ -1304,7 +1304,7 @@ nav {
 #cs-click-tip .csct-save {
   flex: 1;
   padding: 6px 0;
-  background: #f59e0b;
+  background: var(--cst-accent, #f59e0b);
   border: none;
   border-radius: 7px;
   color: #1a0e00;
@@ -7158,7 +7158,11 @@ function _buildTipContent(span, set, entry, lv, wordKey) {
     ? csRulesLoad().find(r => r.enabled !== false && r.orig.toLowerCase() === _csWordKey)
     : null;
   const csRowHtml  = _csRule
-    ? `<div class="tip-row"><span class="tip-label" style="color:#f59e0b;">CS</span><span class="tip-value" style="color:#f59e0b;font-style:italic;">${esc(_csRule.form)}</span>${_csRule.note ? `<span style="font-size:10px;color:var(--tip-label,#9b7fc7);margin-left:6px;font-style:normal;">${esc(_csRule.note)}</span>` : ''}</div>`
+    ? (function() {
+        var _cat   = _csRule.category || 'Custom';
+        var _col   = (typeof csCatColor === 'function') ? csCatColor(_cat) : '#f59e0b';
+        return `<div class="tip-row"><span class="tip-label" style="color:${_col};">CS</span><span class="tip-value" style="color:${_col};font-style:italic;">${esc(_csRule.form)}</span>${_csRule.note ? `<span style="font-size:10px;color:var(--tip-label,#9b7fc7);margin-left:6px;font-style:normal;">${esc(_csRule.note)}</span>` : ''}</div>`;
+      })()
     : '';
 
   const _ignWord = (span.dataset.origWord || span.dataset.word || '').toLowerCase();
@@ -10857,6 +10861,24 @@ function csApplyHighlights() {
       var endInfo   = charMap[mE - 1];
       if (!startInfo || !endInfo) continue;
 
+      // Compute category colour CSS vars for this rule
+      var rCat    = rule.category || 'Custom';
+      var rColHex = (typeof csCatColor === 'function') ? csCatColor(rCat) : '#d97706';
+      var rRgb    = (typeof hexToRgb   === 'function') ? hexToRgb(rColHex) : '217,119,6';
+      // Darken the colour slightly for the border
+      function _csDarken(hex) {
+        var m2 = (hex||'').match(/^#?([0-9a-f]{2})([0-9a-f]{2})([0-9a-f]{2})$/i);
+        if (!m2) return hex;
+        return 'rgba(' + [parseInt(m2[1],16),parseInt(m2[2],16),parseInt(m2[3],16)].map(v=>Math.max(0,v-30)).join(',') + ',0.75)';
+      }
+      function _applyCSStyle(s) {
+        s.style.setProperty('--cs-color',      rColHex);
+        s.style.setProperty('--cs-bg',         'rgba(' + rRgb + ',0.13)');
+        s.style.setProperty('--cs-bg-hover',   'rgba(' + rRgb + ',0.26)');
+        s.style.setProperty('--cs-border',     _csDarken(rColHex));
+        s.dataset.csCat = rCat;
+      }
+
       if (startInfo.node === endInfo.node) {
         // ── Simple case: match within one text node ──────────────────────
         var node   = startInfo.node;
@@ -10868,6 +10890,7 @@ function csApplyHighlights() {
         span.dataset.csForm = rule.form;
         span.textContent    = dispForm;
         span.title          = rule.orig + (rule.note ? "  \u2014  " + rule.note : "");
+        _applyCSStyle(span);
         var frag = document.createDocumentFragment();
         if (before) frag.appendChild(document.createTextNode(before));
         frag.appendChild(span);
@@ -10914,6 +10937,7 @@ function csApplyHighlights() {
         span2.dataset.csForm = rule.form;
         span2.textContent    = dispForm;
         span2.title          = rule.orig + (rule.note ? "  \u2014  " + rule.note : "");
+        _applyCSStyle(span2);
 
         var frag2 = document.createDocumentFragment();
         if (beforeText2) frag2.appendChild(document.createTextNode(beforeText2));
@@ -10996,6 +11020,19 @@ var _csTip = (function () {
     span.classList.add('cs-active-tip');
     $id('csct-orig-val').textContent = span.dataset.csOrig || '';
     $id('csct-form-val').textContent = span.dataset.csForm || span.textContent;
+    // Apply category colour to tooltip
+    var cat    = span.dataset.csCat || 'Custom';
+    var tip    = $id('cs-click-tip');
+    var badge  = tip ? tip.querySelector('.csct-badge') : null;
+    if (badge) badge.textContent = cat;
+    if (tip && typeof csCatColor === 'function' && typeof hexToRgb === 'function') {
+      var hex = csCatColor(cat);
+      var rgb = hexToRgb(hex);
+      tip.style.setProperty('--cst-accent',   hex);
+      tip.style.setProperty('--cst-bg',       'rgba(' + rgb + ',0.12)');
+      tip.style.setProperty('--cst-bg-hover', 'rgba(' + rgb + ',0.22)');
+      tip.style.setProperty('--cst-border',   'rgba(' + rgb + ',0.30)');
+    }
     _collapseEdit();
     _pos(span.getBoundingClientRect());
   }
