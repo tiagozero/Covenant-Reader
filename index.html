@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <title>Covenant</title>
-  <link rel="icon" type="image/svg+xml" href="favicon-01-serif-c.svg">
+  <link rel="icon" type="image/svg+xml" href="favicon/favicon-01-serif-c.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&family=DM+Mono&family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;600&family=Noto+Serif+SC:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet">
@@ -2802,6 +2802,15 @@ nav {
           <button onclick="csRulesAddFromForm()" style="background:#4ade80;color:#0a1a0a;border:none;border-radius:8px;font-size:0.75rem;font-weight:700;padding:7px 18px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">+ Add Rule</button>
           <button onclick="document.getElementById('mv-rules-add-form').style.display='none'" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.75rem;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='#444'" onmouseout="this.style.borderColor='var(--border)'">Cancel</button>
         </div>
+      </div>
+
+      <!-- Category Highlight Colours -->
+      <div id="mv-cat-colors-section" style="margin-bottom:22px;">
+        <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;">
+          <div style="font-size:0.62rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;color:var(--muted);">Category Highlight Colours</div>
+          <button onclick="csCatColorsResetAll()" style="background:none;border:1px solid var(--border);color:var(--muted2);font-size:0.62rem;padding:3px 10px;border-radius:6px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='#f87171';this.style.color='#f87171'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted2)'">↺ Reset all</button>
+        </div>
+        <div id="mv-cat-colors-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(175px,1fr));gap:8px;"></div>
       </div>
 
       <!-- Search -->
@@ -10061,7 +10070,7 @@ function mvSwitchTab(tab) {
   else if (tab === 'focus') mvRenderFocus();
   else if (tab === 'mining') mvRenderMined();
   else if (tab === 'mastered') { mvRenderMastered(); }
-  else if (tab === 'rules') { connRenderRules(); }
+  else if (tab === 'rules') { connRenderRules(); csCatColorsRender(); }
 }
 
 // ── Study failure/pass tracking (used by all 3 study modes) ──
@@ -10663,8 +10672,8 @@ function mvMasteredImport(input) {
 // ════════════════════════════════════════════════════
 const CS_CATEGORIES = ['Custom','Reduction','Flap T','Th Drop','Elision','Contraction','Linking','Intrusive R','Assimilation'];
 
-// Category badge colours (index matches CS_CATEGORIES order)
-const CS_CAT_COLORS = [
+// Category badge colours — defaults (index matches CS_CATEGORIES order)
+const CS_CAT_COLORS_DEFAULT = [
   '#6b7280', // Custom      – grey
   '#818cf8', // Reduction   – indigo
   '#f97316', // Flap T      – orange
@@ -10676,9 +10685,124 @@ const CS_CAT_COLORS = [
   '#4ade80', // Assimilation– green
 ];
 
+const CS_CAT_COLORS_KEY = 'pera-cs-cat-colors';
+
+function csCatColorsLoad() {
+  try { return JSON.parse(kvSync.getItem(CS_CAT_COLORS_KEY) || '{}'); } catch { return {}; }
+}
+function csCatColorsSave(map) {
+  try { kvSync.setItem(CS_CAT_COLORS_KEY, JSON.stringify(map)); } catch {}
+}
+
 function csCatColor(cat) {
+  const overrides = csCatColorsLoad();
+  if (overrides[cat]) return overrides[cat];
   const i = CS_CATEGORIES.indexOf(cat);
-  return i >= 0 ? CS_CAT_COLORS[i] : CS_CAT_COLORS[0];
+  return i >= 0 ? CS_CAT_COLORS_DEFAULT[i] : CS_CAT_COLORS_DEFAULT[0];
+}
+
+function csCatColorSet(cat, hex) {
+  const overrides = csCatColorsLoad();
+  overrides[cat] = hex;
+  csCatColorsSave(overrides);
+}
+
+function csCatColorReset(cat) {
+  const overrides = csCatColorsLoad();
+  delete overrides[cat];
+  csCatColorsSave(overrides);
+}
+
+function csCatColorsResetAll() {
+  csCatColorsSave({});
+  csCatColorsRender();
+  csRulesRender();
+  if (peraSettings.csActive && document.getElementById('reader-view')?.style.display === 'block') csApplyHighlights();
+}
+
+// ── Render the colour-picker grid in the Rules panel ──
+function csCatColorsRender() {
+  const grid = document.getElementById('mv-cat-colors-grid');
+  if (!grid) return;
+  const overrides = csCatColorsLoad();
+  grid.innerHTML = '';
+  CS_CATEGORIES.forEach((cat, i) => {
+    const current  = overrides[cat] || CS_CAT_COLORS_DEFAULT[i];
+    const isCustom = !!overrides[cat];
+    const rgb      = hexToRgb(current);
+
+    const card = document.createElement('div');
+    card.style.cssText = 'display:flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid var(--border2);border-radius:10px;padding:9px 12px;transition:border-color 0.15s;cursor:default;';
+    card.onmouseenter = () => { card.style.borderColor = current; };
+    card.onmouseleave = () => { card.style.borderColor = 'var(--border2)'; };
+
+    // ── Colour swatch (click → opens native colour picker) ──
+    const swatchWrap = document.createElement('label');
+    swatchWrap.style.cssText = 'position:relative;flex-shrink:0;cursor:pointer;display:block;width:30px;height:30px;';
+    swatchWrap.title = `Pick colour for ${cat}`;
+
+    const swatch = document.createElement('div');
+    swatch.style.cssText = `width:30px;height:30px;border-radius:7px;background:rgba(${rgb},0.18);border:2px solid ${current};display:flex;align-items:center;justify-content:center;transition:all 0.15s;pointer-events:none;`;
+    swatch.innerHTML = `<div style="width:13px;height:13px;border-radius:3px;background:${current};"></div>`;
+
+    const colorInput = document.createElement('input');
+    colorInput.type  = 'color';
+    colorInput.value = current;
+    colorInput.style.cssText = 'position:absolute;inset:0;opacity:0;width:100%;height:100%;cursor:pointer;border:none;padding:0;';
+
+    // Live preview while dragging
+    colorInput.addEventListener('input', () => {
+      const hex = colorInput.value;
+      const r   = hexToRgb(hex);
+      swatch.style.borderColor = hex;
+      swatch.style.background  = `rgba(${r},0.18)`;
+      swatch.querySelector('div').style.background = hex;
+      card.onmouseenter = () => { card.style.borderColor = hex; };
+      resetBtn.style.display = 'flex';
+      label.querySelector('.cat-color-status').textContent = 'custom';
+      label.querySelector('.cat-color-status').style.color = hex;
+    });
+
+    // Commit on picker close
+    colorInput.addEventListener('change', () => {
+      const hex = colorInput.value;
+      csCatColorSet(cat, hex);
+      // Re-apply reader highlights with new colour
+      if (peraSettings.csActive && document.getElementById('reader-view')?.style.display === 'block') csApplyHighlights();
+      csRulesRender();
+      csCatColorsRender();
+    });
+
+    swatchWrap.appendChild(swatch);
+    swatchWrap.appendChild(colorInput);
+
+    // ── Label ──
+    const label = document.createElement('div');
+    label.style.cssText = 'flex:1;min-width:0;';
+    label.innerHTML = `
+      <div style="font-size:0.75rem;font-weight:600;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${cat}</div>
+      <div class="cat-color-status" style="font-size:0.58rem;color:${isCustom ? current : 'var(--muted2)'};margin-top:1px;">${isCustom ? 'custom' : 'default'}</div>`;
+
+    // ── Reset button ──
+    const resetBtn = document.createElement('button');
+    resetBtn.innerHTML = '↺';
+    resetBtn.title = 'Reset to default';
+    resetBtn.style.cssText = `display:${isCustom ? 'flex' : 'none'};align-items:center;justify-content:center;width:22px;height:22px;background:none;border:1px solid var(--border);border-radius:5px;color:var(--muted2);font-size:0.8rem;cursor:pointer;flex-shrink:0;transition:all 0.12s;`;
+    resetBtn.onmouseenter = () => { resetBtn.style.borderColor = '#f87171'; resetBtn.style.color = '#f87171'; };
+    resetBtn.onmouseleave = () => { resetBtn.style.borderColor = 'var(--border)'; resetBtn.style.color = 'var(--muted2)'; };
+    resetBtn.onclick = (e) => {
+      e.stopPropagation();
+      csCatColorReset(cat);
+      csCatColorsRender();
+      csRulesRender();
+      if (peraSettings.csActive && document.getElementById('reader-view')?.style.display === 'block') csApplyHighlights();
+    };
+
+    card.appendChild(swatchWrap);
+    card.appendChild(label);
+    card.appendChild(resetBtn);
+    grid.appendChild(card);
+  });
 }
 
 function csCatSelectHTML(id, selectedCat, extraStyle) {
@@ -13319,6 +13443,7 @@ function refreshUwordsIfOpen() {
     'pera-uwords-trend',
     'pera-word-notes',
     'pera-cs-rules',
+    'pera-cs-cat-colors',
   ]);
   settingsLoad();
   // Migrate legacy lightMode to theme
