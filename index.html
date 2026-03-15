@@ -956,6 +956,163 @@ nav {
 .uwords-trend-bar:hover { opacity: 0.75; }
 .uwords-trend-bar.current { outline: 1px solid rgba(255,255,255,0.5); outline-offset: 1px; }
 
+/* ════════════ HIGHLIGHTS PANEL ════════════ */
+.hlpanel-sidebar {
+  width: 268px; flex-shrink: 0;
+  border-left: 1px solid var(--border); background: var(--surface);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.25s ease, opacity 0.2s ease;
+}
+.hlpanel-sidebar.collapsed { width: 0; opacity: 0; pointer-events: none; }
+
+.hlpanel-header {
+  padding: 11px 14px 9px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+}
+.hlpanel-title {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); flex: 1; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+}
+.hlpanel-count-badge {
+  font-size: 0.57rem; font-family: 'DM Mono', monospace;
+  background: rgba(232,54,93,0.1); color: var(--accent);
+  border-radius: 10px; padding: 1px 6px; font-weight: 700; flex-shrink: 0;
+}
+
+/* Level filter strip — equal segments, no wrapping */
+.hlpanel-filters {
+  display: flex; gap: 3px; padding: 6px 10px;
+  border-bottom: 1px solid var(--border); flex-shrink: 0;
+}
+.hlp-filter {
+  flex: 1; padding: 3px 0; border-radius: 5px; font-size: 0.59rem; font-weight: 700;
+  cursor: pointer; border: 1px solid transparent; background: transparent;
+  color: var(--muted); transition: all 0.12s; font-family: 'DM Sans', sans-serif;
+  text-align: center; white-space: nowrap;
+}
+.hlp-filter:hover { color: var(--text); background: rgba(255,255,255,0.04); }
+.hlp-filter[data-lv="all"].active  { background: rgba(232,54,93,0.1);  color: var(--accent);  border-color: rgba(232,54,93,0.28); }
+.hlp-filter[data-lv="1"].active   { background: rgba(248,113,113,0.1); color: #f87171; border-color: rgba(248,113,113,0.3); }
+.hlp-filter[data-lv="2"].active   { background: rgba(251,146,60,0.1);  color: #fb923c; border-color: rgba(251,146,60,0.3);  }
+.hlp-filter[data-lv="3"].active   { background: rgba(250,204,21,0.1);  color: #facc15; border-color: rgba(250,204,21,0.3);  }
+.hlp-filter[data-lv="4"].active   { background: rgba(74,222,128,0.1);  color: #4ade80; border-color: rgba(74,222,128,0.3);  }
+.hlp-filter[data-lv="5"].active   { background: rgba(74,222,128,0.08); color: #4ade80; border-color: rgba(74,222,128,0.25); }
+
+/* Search */
+.hlpanel-search {
+  padding: 6px 10px; border-bottom: 1px solid var(--border); flex-shrink: 0; position: relative;
+}
+.hlpanel-search::before {
+  content: ''; position: absolute; left: 19px; top: 50%; transform: translateY(-50%);
+  width: 12px; height: 12px; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.hlpanel-search input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 9px 5px 26px; font-size: 0.68rem;
+  color: var(--text); font-family: 'DM Sans', sans-serif; outline: none;
+  transition: border-color 0.15s;
+}
+.hlpanel-search input:focus { border-color: #3a3a3a; }
+.hlpanel-search input::placeholder { color: var(--muted); }
+
+/* Select-all row */
+.hlpanel-selrow {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 4px 12px 4px 12px; border-bottom: 1px solid var(--border); flex-shrink: 0;
+  background: rgba(255,255,255,0.012);
+}
+.hlp-sel-all-wrap {
+  display: flex; align-items: center; gap: 7px; cursor: pointer;
+  font-size: 0.62rem; color: var(--muted); user-select: none; padding: 3px 0;
+}
+.hlp-sel-all-wrap input[type=checkbox] { accent-color: var(--accent); cursor: pointer; width: 12px; height: 12px; }
+.hlp-sel-count { font-size: 0.57rem; color: var(--accent); font-family: 'DM Mono', monospace; font-weight: 700; }
+
+/* Word list */
+.hlpanel-list { overflow-y: auto; flex: 1; padding: 2px 0; }
+.hlpanel-list::-webkit-scrollbar { width: 3px; }
+.hlpanel-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+/* Each row */
+.hlp-item {
+  display: flex; align-items: center; padding: 4px 8px 4px 8px;
+  gap: 6px; transition: background 0.1s; border-left: 2px solid transparent;
+  min-height: 28px; position: relative;
+}
+.hlp-item:hover { background: rgba(255,255,255,0.025); }
+.hlp-item.hlp-selected { background: rgba(232,54,93,0.05); border-left-color: rgba(232,54,93,0.45); }
+.hlp-item.hlp-hidden { opacity: 0.38; }
+
+/* Checkbox — hidden by default, shown on hover or when selected */
+.hlp-item input[type=checkbox] {
+  accent-color: var(--accent); cursor: pointer; flex-shrink: 0;
+  width: 12px; height: 12px; opacity: 0; transition: opacity 0.1s;
+}
+.hlp-item:hover input[type=checkbox],
+.hlp-item.hlp-selected input[type=checkbox] { opacity: 1; }
+
+/* Thin colored level bar */
+.hlp-lv-stripe { width: 3px; height: 16px; border-radius: 2px; flex-shrink: 0; }
+
+/* Word text */
+.hlp-word {
+  font-size: 0.76rem; color: var(--text); flex: 1; overflow: hidden;
+  text-overflow: ellipsis; white-space: nowrap;
+}
+.hlp-item.hlp-hidden .hlp-word { text-decoration: line-through; color: var(--muted); }
+
+/* Frequency */
+.hlp-freq { font-size: 0.51rem; color: var(--muted); font-family: 'DM Mono', monospace; flex-shrink: 0; }
+
+/* Level badge */
+.hlp-lv-badge {
+  font-size: 0.49rem; font-family: 'DM Mono', monospace; font-weight: 700;
+  padding: 1px 4px; border-radius: 3px; flex-shrink: 0; letter-spacing: 0.03em;
+}
+
+/* Hide button — appears on hover only */
+.hlp-item-hide-btn {
+  background: none; border: none; cursor: pointer; padding: 3px 4px;
+  border-radius: 4px; opacity: 0; transition: opacity 0.12s, color 0.12s;
+  flex-shrink: 0; line-height: 1; color: var(--muted);
+  display: flex; align-items: center; justify-content: center;
+}
+.hlp-item:hover .hlp-item-hide-btn { opacity: 1; }
+.hlp-item-hide-btn:hover { color: #f87171; }
+.hlp-item.hlp-hidden .hlp-item-hide-btn { opacity: 0.8; color: #4ade80; }
+
+/* Bulk action bar */
+.hlpanel-actions {
+  border-top: 1px solid var(--border); padding: 8px 10px 10px; flex-shrink: 0;
+  background: var(--bg);
+}
+.hlpa-label {
+  font-size: 0.56rem; color: var(--muted); text-align: center; margin-bottom: 7px;
+  font-weight: 600; letter-spacing: 0.06em; text-transform: uppercase;
+}
+.hlpa-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 5px; }
+.hlpa-btn {
+  display: flex; align-items: center; justify-content: center; gap: 4px;
+  padding: 7px 4px; border-radius: 7px; font-size: 0.62rem; font-weight: 600;
+  font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.13s;
+  border: 1px solid var(--border2); background: var(--surface); color: var(--muted);
+}
+.hlpa-btn:hover { background: var(--surface2); }
+.hlpa-btn:disabled { opacity: 0.22; cursor: default; pointer-events: none; }
+.hlpa-down:hover  { color: #fb923c; border-color: rgba(251,146,60,0.45); background: rgba(251,146,60,0.07); }
+.hlpa-up:hover    { color: #4ade80; border-color: rgba(74,222,128,0.45); background: rgba(74,222,128,0.07); }
+.hlpa-master:hover { color: #facc15; border-color: rgba(250,204,21,0.45); background: rgba(250,204,21,0.07); }
+.hlpa-hide:hover  { color: #f87171; border-color: rgba(248,113,113,0.45); background: rgba(248,113,113,0.07); }
+
+/* Empty state */
+.hlpanel-empty {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 44px 16px; gap: 10px; color: var(--muted); font-size: 0.74rem;
+  text-align: center; line-height: 1.65; opacity: 0.7;
+}
+
 /* ════════════ RESPONSIVE ════════════ */
 @media (max-width: 640px) {
   .upload-grid { grid-template-columns: 1fr; }
@@ -1606,11 +1763,11 @@ nav {
   font-family: 'DM Sans', sans-serif; font-size: 14px; line-height: 1.5;
   padding: 14px 16px 12px; border-radius: 12px;
   box-shadow: var(--tip-shadow, 0 6px 28px rgba(80,0,160,0.35), 0 0 0 1px rgba(180,120,255,0.15));
-  width: 320px; border-top: 3px solid var(--accent); box-sizing: border-box;
+  width: 280px; min-width: 280px; max-width: 280px; border-top: 3px solid var(--accent); box-sizing: border-box;
   opacity: 0; transition: opacity 0.12s ease;
   pointer-events: none;
 }
-#hl-tip.tip-wide { width: 380px; }
+#hl-tip.tip-wide { width: 280px; min-width: 280px; max-width: 280px; }
 #hl-tip.tip-visible { opacity: 1; pointer-events: auto; }
 #hl-tip::after {
   content: ''; position: absolute; top: 100%; left: 50%;
@@ -2686,6 +2843,10 @@ nav {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Unique
         </button>
+        <button class="icon-btn" id="hlpanel-toggle-btn" onclick="toggleHlPanel()" title="Toggle Highlights panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M12 20h9" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Highlights
+        </button>
 
         <button class="icon-btn" id="reader-settings-btn" onclick="openSettingsOverlay()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -2763,7 +2924,65 @@ nav {
       </div>
     </div>
 
-    <!-- Dictionary right sidebar -->
+    <!-- ════════ HIGHLIGHTS PANEL ════════ -->
+    <div class="hlpanel-sidebar collapsed" id="hlpanel-sidebar">
+      <div class="hlpanel-header">
+        <span class="hlpanel-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><path d="M12 20h9" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Highlights
+        </span>
+        <span class="hlpanel-count-badge" id="hlpanel-count">0</span>
+      </div>
+      <!-- Level filter strip -->
+      <div class="hlpanel-filters" id="hlpanel-filters">
+        <button class="hlp-filter active" data-lv="all"  onclick="hlpSetFilter('all',this)">All</button>
+        <button class="hlp-filter"        data-lv="1"    onclick="hlpSetFilter('1',this)">L1</button>
+        <button class="hlp-filter"        data-lv="2"    onclick="hlpSetFilter('2',this)">L2</button>
+        <button class="hlp-filter"        data-lv="3"    onclick="hlpSetFilter('3',this)">L3</button>
+        <button class="hlp-filter"        data-lv="4"    onclick="hlpSetFilter('4',this)">L4</button>
+        <button class="hlp-filter"        data-lv="5"    onclick="hlpSetFilter('5',this)">L5</button>
+      </div>
+      <!-- Search -->
+      <div class="hlpanel-search">
+        <input type="text" id="hlpanel-search-inp" placeholder="Filter words…" oninput="hlpRender()">
+      </div>
+      <!-- Select-all row -->
+      <div class="hlpanel-selrow">
+        <label class="hlp-sel-all-wrap">
+          <input type="checkbox" id="hlp-chk-all" onchange="hlpToggleAll(this.checked)">
+          <span id="hlp-sel-label">Select all</span>
+        </label>
+        <span class="hlp-sel-count" id="hlp-sel-count"></span>
+      </div>
+      <!-- Word list -->
+      <div class="hlpanel-list" id="hlpanel-list"></div>
+      <!-- Bulk action bar -->
+      <div class="hlpanel-actions">
+        <div class="hlpa-label" id="hlpa-label">Select words to act on</div>
+        <div class="hlpa-btns">
+          <button class="hlpa-btn hlpa-down"   onclick="hlpBulkAction('drop')"    title="Drop to previous level" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="6 9 12 15 18 9"/></svg>
+            Level Down
+          </button>
+          <button class="hlpa-btn hlpa-up"     onclick="hlpBulkAction('levelup')" title="Level up" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><polyline points="18 15 12 9 6 15"/></svg>
+            Level Up
+          </button>
+          <button class="hlpa-btn hlpa-master" onclick="hlpBulkAction('master')"  title="Mark as mastered" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round" style="width:11px;height:11px"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            Mastery
+          </button>
+          <button class="hlpa-btn hlpa-hide"   onclick="hlpBulkAction('hide')"    title="Hide / unhide highlights" disabled>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:11px;height:11px"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+            Hide
+          </button>
+        </div>
+        <button onclick="hlpOpenGridTab()" style="width:100%;margin-top:6px;padding:7px 0;border-radius:7px;border:1px solid rgba(139,92,246,0.3);background:rgba(139,92,246,0.07);color:#a78bfa;font-size:0.63rem;font-weight:600;font-family:'DM Sans',sans-serif;cursor:pointer;transition:all 0.15s;display:flex;align-items:center;justify-content:center;gap:5px;" onmouseover="this.style.background='rgba(139,92,246,0.14)';this.style.borderColor='rgba(139,92,246,0.5)'" onmouseout="this.style.background='rgba(139,92,246,0.07)';this.style.borderColor='rgba(139,92,246,0.3)'">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>
+          Grid View
+        </button>
+      </div>
+    </div>
     <div id="dict-sidebar" class="collapsed">
       <div class="dsb-header">
         <span class="dsb-title">📖 Dictionary</span>
@@ -5179,6 +5398,7 @@ function loadChapter(idx) {
     if (csvSets.length) applyHighlights();
     else if (peraSettings.csActive) setTimeout(csApplyHighlights, 50);
     refreshUwordsIfOpen();
+    _hlpRefreshAfterChapterLoad();
   });
   document.getElementById('reader-main').scrollTo(0, 0);
   // Update prev/next button disabled state
@@ -6002,6 +6222,8 @@ function applyHighlights() {
   applyHighlights._badgeTimer = setTimeout(renderBadge, 300);
   // Refresh unique words sidebar if open (CSV set changed means known words changed)
   refreshUwordsIfOpen();
+  // Refresh highlights panel + apply hidden state
+  _hlpRefreshAfterChapterLoad();
   // Re-apply Connected Speech highlights if active
   if (peraSettings.csActive) setTimeout(csApplyHighlights, 10);
   // Re-apply note indicators (blue dots on noted words)
@@ -12003,15 +12225,589 @@ function _uwordsBadgeReposition() {
 function _badgeReposition() {
   const badge = document.getElementById('pera-badge');
   if (!badge) return;
-  // Tip sidebar (300px) takes priority, then uwords sidebar (240px)
+  // Tip sidebar (300px) takes priority, then uwords (280px), then highlights panel (268px)
   if (_tipSidebarOpen) {
     badge.style.right = 'calc(300px + 16px)';
+  } else if (_uwordsSidebarOpen && _hlPanelOpen) {
+    badge.style.right = 'calc(var(--uwords-w, 280px) + 268px + 16px)';
   } else if (_uwordsSidebarOpen) {
-    badge.style.right = 'calc(var(--uwords-w, 240px) + 16px)';
+    badge.style.right = 'calc(var(--uwords-w, 280px) + 16px)';
+  } else if (_hlPanelOpen) {
+    badge.style.right = 'calc(268px + 16px)';
   } else {
     badge.style.right = '16px';
   }
 }
+
+// ════════════════════════════════════════════════════
+// HIGHLIGHTS PANEL
+// Shows all highlighted (CSV) words in the current chapter
+// with multi-select, bulk level actions, and per-word hide
+// ════════════════════════════════════════════════════
+let _hlPanelOpen   = false;
+let _hlPanelFilter = 'all';   // 'all' | '1'..'5'
+let _hlPanelSel    = new Set(); // selected word keys
+const _HLP_HIDDEN_KEY = 'pera-hlpanel-hidden'; // words hidden from highlight display
+
+function _hlpHiddenLoad() {
+  try { return new Set(JSON.parse(kvSync.getItem(_HLP_HIDDEN_KEY) || '[]')); } catch { return new Set(); }
+}
+function _hlpHiddenSave(s) {
+  try { kvSync.setItem(_HLP_HIDDEN_KEY, JSON.stringify([...s])); } catch {}
+}
+
+function toggleHlPanel() {
+  _hlPanelOpen = !_hlPanelOpen;
+  const sb  = document.getElementById('hlpanel-sidebar');
+  const btn = document.getElementById('hlpanel-toggle-btn');
+  sb?.classList.toggle('collapsed', !_hlPanelOpen);
+  if (btn) btn.classList.toggle('hl-active', _hlPanelOpen);
+  _badgeReposition();
+  if (_hlPanelOpen) hlpRender();
+}
+
+function hlpSetFilter(lv, btn) {
+  _hlPanelFilter = lv;
+  document.querySelectorAll('.hlp-filter').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  _hlPanelSel.clear();
+  hlpRender();
+}
+
+// Collect unique highlighted words from the current chapter
+function _hlpCollect() {
+  const LV_COLORS = ['','#f87171','#fb923c','#facc15','#4ade80','#4ade80'];
+  const LV_BG     = ['','rgba(248,113,113,0.12)','rgba(251,146,60,0.12)','rgba(250,204,21,0.12)','rgba(74,222,128,0.12)','rgba(74,222,128,0.12)'];
+
+  const spans = document.querySelectorAll('#chapter-content .pera-hl');
+  const seen  = new Map(); // wordKey → {word, lv, si, color, bg, count}
+  spans.forEach(s => {
+    if (s.dataset.si === '-1') return; // skip mined
+    const key = s.dataset.word || '';
+    if (!key) return;
+    const lv = parseInt(s.dataset.lv, 10) || 1;
+    if (!seen.has(key)) {
+      seen.set(key, {
+        word:  s.dataset.origWord || s.textContent.trim(),
+        key,
+        lv,
+        si:    parseInt(s.dataset.si, 10),
+        color: LV_COLORS[lv] || '#7c3aed',
+        bg:    LV_BG[lv] || 'rgba(124,58,237,0.12)',
+        count: 1
+      });
+    } else {
+      seen.get(key).count++;
+    }
+  });
+
+  // Sort: level asc, then alpha
+  return [...seen.values()].sort((a, b) => a.lv - b.lv || a.word.localeCompare(b.word));
+}
+
+function hlpRender() {
+  const list   = document.getElementById('hlpanel-list');
+  const countEl = document.getElementById('hlpanel-count');
+  const selCountEl = document.getElementById('hlp-sel-count');
+  const selLabelEl = document.getElementById('hlp-sel-label');
+  const allChk = document.getElementById('hlp-chk-all');
+  const actLabel = document.getElementById('hlpa-label');
+  if (!list) return;
+
+  const q       = (document.getElementById('hlpanel-search-inp')?.value || '').toLowerCase().trim();
+  const hidden  = _hlpHiddenLoad();
+  let   words   = _hlpCollect();
+
+  // Apply level filter
+  if (_hlPanelFilter !== 'all') {
+    const lvNum = parseInt(_hlPanelFilter, 10);
+    words = words.filter(w => w.lv === lvNum);
+  }
+  // Apply search filter
+  if (q) words = words.filter(w => w.word.toLowerCase().includes(q));
+
+  if (countEl) countEl.textContent = words.length;
+
+  if (!words.length) {
+    list.innerHTML = `<div class="hlpanel-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px;opacity:0.25"><path d="M12 20h9" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      <span>No highlighted words<br>in this chapter yet.</span>
+    </div>`;
+    if (allChk) allChk.checked = false;
+    if (selCountEl) selCountEl.textContent = '';
+    if (actLabel) actLabel.textContent = 'Select words above';
+    _updateHlpActionBtns(0);
+    return;
+  }
+
+  const LV_NAMES = ['','L1','L2','L3','L4','L5'];
+
+  const frag = document.createDocumentFragment();
+  words.forEach(({ word, key, lv, color, bg, count }) => {
+    const isHidden   = hidden.has(key);
+    const isSelected = _hlPanelSel.has(key);
+    const item = document.createElement('div');
+    item.className = 'hlp-item' + (isSelected ? ' hlp-selected' : '') + (isHidden ? ' hlp-hidden' : '');
+    item.dataset.key = key;
+
+    const dotStyle   = `background:${color};`;
+    const badgeStyle = `background:${bg};color:${color};`;
+    const hideTitle  = isHidden ? 'Unhide highlight' : 'Hide highlight';
+    const hideIcon   = isHidden
+      ? `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`
+      : `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="width:10px;height:10px"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>`;
+
+    item.innerHTML = `
+      <input type="checkbox" ${isSelected ? 'checked' : ''} onchange="hlpToggleItem('${key.replace(/'/g,"\\'")}',this.checked)">
+      <span class="hlp-lv-stripe" style="${dotStyle}"></span>
+      <span class="hlp-word" title="${esc(word)}">${esc(word)}</span>
+      <span class="hlp-freq">${count}×</span>
+      <span class="hlp-lv-badge" style="${badgeStyle}">${LV_NAMES[lv]||''}</span>
+      <button class="hlp-item-hide-btn" title="${hideTitle}" onclick="hlpToggleHide('${key.replace(/'/g,"\\'")}',this)">${hideIcon}</button>`;
+    frag.appendChild(item);
+  });
+  list.innerHTML = '';
+  list.appendChild(frag);
+
+  // Update select-all checkbox state
+  const selCount = _hlPanelSel.size;
+  const visibleKeys = words.map(w => w.key);
+  const allSelected = visibleKeys.length > 0 && visibleKeys.every(k => _hlPanelSel.has(k));
+  const someSelected = !allSelected && visibleKeys.some(k => _hlPanelSel.has(k));
+  if (allChk) {
+    allChk.checked = allSelected;
+    allChk.indeterminate = someSelected;
+  }
+  if (selLabelEl) selLabelEl.textContent = allSelected ? 'Deselect all' : 'Select all';
+  if (selCountEl) selCountEl.textContent = selCount > 0 ? `${selCount} selected` : '';
+  if (actLabel) actLabel.textContent = selCount > 0 ? `${selCount} word${selCount !== 1 ? 's' : ''} selected` : 'Select words above';
+  _updateHlpActionBtns(selCount);
+}
+
+function _updateHlpActionBtns(selCount) {
+  document.querySelectorAll('.hlpa-btn').forEach(b => {
+    b.disabled = selCount === 0;
+  });
+}
+
+function hlpToggleItem(key, checked) {
+  if (checked) _hlPanelSel.add(key);
+  else _hlPanelSel.delete(key);
+  // Update item appearance without full re-render
+  const item = document.querySelector(`.hlp-item[data-key="${CSS.escape(key)}"]`);
+  if (item) item.classList.toggle('hlp-selected', checked);
+  // Update counts
+  const selCount = _hlPanelSel.size;
+  const selCountEl = document.getElementById('hlp-sel-count');
+  const actLabel   = document.getElementById('hlpa-label');
+  const allChk     = document.getElementById('hlp-chk-all');
+  if (selCountEl) selCountEl.textContent = selCount > 0 ? `${selCount} selected` : '';
+  if (actLabel)   actLabel.textContent   = selCount > 0 ? `${selCount} word${selCount !== 1 ? 's' : ''} selected` : 'Select words above';
+  _updateHlpActionBtns(selCount);
+  // Update all-checkbox state
+  const visibleItems = [...document.querySelectorAll('.hlp-item')];
+  const visibleKeys  = visibleItems.map(el => el.dataset.key);
+  const allSel = visibleKeys.length > 0 && visibleKeys.every(k => _hlPanelSel.has(k));
+  const someSel = !allSel && visibleKeys.some(k => _hlPanelSel.has(k));
+  if (allChk) { allChk.checked = allSel; allChk.indeterminate = someSel; }
+  const selLabelEl = document.getElementById('hlp-sel-label');
+  if (selLabelEl) selLabelEl.textContent = allSel ? 'Deselect all' : 'Select all';
+}
+
+function hlpToggleAll(checked) {
+  const visibleItems = [...document.querySelectorAll('.hlp-item')];
+  visibleItems.forEach(el => {
+    const key = el.dataset.key;
+    if (checked) _hlPanelSel.add(key);
+    else _hlPanelSel.delete(key);
+    el.classList.toggle('hlp-selected', checked);
+    const chk = el.querySelector('input[type=checkbox]');
+    if (chk) chk.checked = checked;
+  });
+  const selCount = _hlPanelSel.size;
+  const selCountEl = document.getElementById('hlp-sel-count');
+  const actLabel   = document.getElementById('hlpa-label');
+  const selLabelEl = document.getElementById('hlp-sel-label');
+  if (selCountEl) selCountEl.textContent = selCount > 0 ? `${selCount} selected` : '';
+  if (actLabel)   actLabel.textContent   = selCount > 0 ? `${selCount} word${selCount !== 1 ? 's' : ''} selected` : 'Select words above';
+  if (selLabelEl) selLabelEl.textContent = checked ? 'Deselect all' : 'Select all';
+  _updateHlpActionBtns(selCount);
+}
+
+function hlpBulkAction(action) {
+  if (!_hlPanelSel.size) return;
+
+  if (action === 'hide') {
+    // Toggle hide: if all selected are hidden → unhide all; else hide all
+    const hidden = _hlpHiddenLoad();
+    const allHidden = [..._hlPanelSel].every(k => hidden.has(k));
+    [..._hlPanelSel].forEach(k => {
+      if (allHidden) hidden.delete(k);
+      else hidden.add(k);
+    });
+    _hlpHiddenSave(hidden);
+    // Apply visibility to actual highlights in the reader
+    _hlpApplyHiddenToReader();
+    const msg = allHidden ? `👁 ${_hlPanelSel.size} word${_hlPanelSel.size !== 1 ? 's' : ''} unhidden` : `🚫 ${_hlPanelSel.size} word${_hlPanelSel.size !== 1 ? 's' : ''} hidden`;
+    hlToast(msg);
+    hlpRender();
+    return;
+  }
+
+  // Level actions: apply hlApplyLevel to each selected word's spans
+  let count = 0;
+  [..._hlPanelSel].forEach(key => {
+    const spans = document.querySelectorAll(`#chapter-content .pera-hl[data-word="${CSS.escape(key)}"]`);
+    if (!spans.length) return;
+    const firstSpan = spans[0];
+    const si = parseInt(firstSpan.dataset.si, 10);
+    if (isNaN(si) || si >= csvSets.length) return;
+    const set   = csvSets[si];
+    const entry = set.words[firstSpan.dataset.origWord] || set.words[key];
+    if (!entry) return;
+    const cur = entry.level || 1;
+    let newLv;
+    if (action === 'drop')    newLv = Math.max(1, cur - 1);
+    if (action === 'levelup') newLv = Math.min(5, cur + 1);
+    if (action === 'master')  newLv = 5;
+    if (newLv === cur && action !== 'master') return;
+    hlApplyLevel(firstSpan, newLv);
+    count++;
+  });
+
+  const actionLabel = action === 'drop' ? '▼ Dropped' : action === 'levelup' ? '▲ Levelled up' : '★ Mastered';
+  hlToast(`${actionLabel} ${count} word${count !== 1 ? 's' : ''}`);
+  // Re-render panel to reflect new levels
+  _hlPanelSel.clear();
+  hlpRender();
+}
+
+function hlpToggleHide(key, btn) {
+  const hidden = _hlpHiddenLoad();
+  const wasHidden = hidden.has(key);
+  if (wasHidden) hidden.delete(key); else hidden.add(key);
+  _hlpHiddenSave(hidden);
+  _hlpApplyHiddenToReader();
+  hlToast(wasHidden ? `👁 "${key}" unhidden` : `🚫 "${key}" hidden`);
+  hlpRender();
+}
+
+// Apply hidden state to reader spans — hidden words get opacity:0 style on the span
+function _hlpApplyHiddenToReader() {
+  const hidden = _hlpHiddenLoad();
+  document.querySelectorAll('#chapter-content .pera-hl').forEach(s => {
+    const key = s.dataset.word || '';
+    if (hidden.has(key)) {
+      s.style.opacity    = '0.18';
+      s.style.pointerEvents = 'none';
+      s.style.userSelect = 'none';
+    } else {
+      s.style.opacity    = '';
+      s.style.pointerEvents = '';
+      s.style.userSelect = '';
+    }
+  });
+}
+
+// Called after every chapter load — also apply hidden state
+function _hlpRefreshAfterChapterLoad() {
+  _hlpApplyHiddenToReader();
+  if (_hlPanelOpen) { _hlPanelSel.clear(); hlpRender(); }
+}
+
+// ── Highlights Grid Tab ─────────────────────────────
+function hlpOpenGridTab() {
+  const LV_COLORS = ['','#f87171','#fb923c','#facc15','#4ade80','#4ade80'];
+  const LV_BG     = ['','rgba(248,113,113,0.13)','rgba(251,146,60,0.13)','rgba(250,204,21,0.13)','rgba(74,222,128,0.13)','rgba(74,222,128,0.1)'];
+  const LV_NAMES  = ['','L1','L2','L3','L4','L5'];
+  const hidden    = _hlpHiddenLoad();
+
+  // Build word data from reader spans
+  const spans = document.querySelectorAll('#chapter-content .pera-hl');
+  const seen  = new Map();
+  spans.forEach(s => {
+    if (s.dataset.si === '-1') return;
+    const key = s.dataset.word || ''; if (!key) return;
+    const lv  = parseInt(s.dataset.lv, 10) || 1;
+    if (!seen.has(key)) seen.set(key, { word: s.dataset.origWord || s.textContent.trim(), key, lv, si: parseInt(s.dataset.si,10), count: 1 });
+    else seen.get(key).count++;
+  });
+
+  const words = [...seen.values()].sort((a,b) => a.lv - b.lv || a.word.localeCompare(b.word));
+  const chTitle = (chapters[currentChap]?.title || 'Chapter');
+
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Highlights — ${esc(chTitle)}</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Mono&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#0e0e0e;--surface:#161616;--surface2:#1c1c1c;--border:#242424;--border2:#2e2e2e;
+  --text:#e2e2e2;--muted:#555;--muted2:#888;--accent:#e8365d;
+  --l1:#f87171;--l2:#fb923c;--l3:#facc15;--l4:#4ade80;--l5:#4ade80;
+}
+body{background:var(--bg);color:var(--text);font-family:'DM Sans',sans-serif;min-height:100vh;}
+header{
+  position:sticky;top:0;z-index:20;
+  background:rgba(14,14,14,0.92);backdrop-filter:blur(14px);
+  border-bottom:1px solid var(--border);
+  padding:0 24px;display:flex;align-items:center;gap:14px;height:54px;flex-wrap:wrap;
+}
+.hdr-logo{font-family:'Instrument Serif',serif;font-size:1.15rem;color:var(--text);letter-spacing:-0.02em;flex-shrink:0;}
+.hdr-logo em{color:var(--accent);font-style:italic;}
+.hdr-scope{font-size:0.65rem;font-weight:700;letter-spacing:0.1em;text-transform:uppercase;
+  padding:3px 9px;border-radius:20px;background:rgba(232,54,93,0.1);color:var(--accent);
+  border:1px solid rgba(232,54,93,0.25);flex-shrink:0;}
+.hdr-title{font-size:0.72rem;color:var(--muted2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hdr-count{font-size:0.65rem;font-family:'DM Mono',monospace;color:var(--accent);
+  background:rgba(232,54,93,0.08);border:1px solid rgba(232,54,93,0.18);
+  padding:2px 9px;border-radius:20px;flex-shrink:0;}
+/* Toolbar */
+.toolbar{
+  display:flex;align-items:center;gap:8px;flex-wrap:wrap;
+  padding:10px 24px;border-bottom:1px solid var(--border);
+  background:var(--surface);position:sticky;top:54px;z-index:19;
+}
+.tb-search{
+  flex:1;min-width:140px;background:var(--bg);border:1px solid var(--border2);
+  border-radius:7px;padding:6px 12px 6px 30px;font-size:0.76rem;color:var(--text);
+  font-family:'DM Sans',sans-serif;outline:none;transition:border-color 0.15s;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='13' height='13' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;background-position:10px center;
+}
+.tb-search:focus{border-color:#3a3a3a;}
+.tb-search::placeholder{color:var(--muted);}
+.tb-sep{width:1px;height:20px;background:var(--border2);flex-shrink:0;}
+.sort-btn,.filter-btn{
+  background:none;border:1px solid var(--border2);color:var(--muted2);
+  font-size:0.67rem;font-family:'DM Sans',sans-serif;padding:5px 11px;border-radius:6px;
+  cursor:pointer;transition:all 0.13s;white-space:nowrap;
+}
+.sort-btn:hover,.filter-btn:hover{border-color:#444;color:var(--text);}
+.sort-btn.active{background:rgba(232,54,93,0.09);border-color:rgba(232,54,93,0.3);color:var(--accent);}
+.filter-btn.active{background:rgba(232,54,93,0.09);border-color:rgba(232,54,93,0.3);color:var(--accent);}
+.filter-btn[data-lv="1"].active{background:rgba(248,113,113,0.1);border-color:rgba(248,113,113,0.35);color:var(--l1);}
+.filter-btn[data-lv="2"].active{background:rgba(251,146,60,0.1);border-color:rgba(251,146,60,0.35);color:var(--l2);}
+.filter-btn[data-lv="3"].active{background:rgba(250,204,21,0.1);border-color:rgba(250,204,21,0.35);color:var(--l3);}
+.filter-btn[data-lv="4"].active{background:rgba(74,222,128,0.1);border-color:rgba(74,222,128,0.35);color:var(--l4);}
+.filter-btn[data-lv="5"].active{background:rgba(74,222,128,0.08);border-color:rgba(74,222,128,0.3);color:var(--l5);}
+/* Grid */
+.grid-wrap{padding:20px 24px 80px;}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(130px,1fr));gap:10px;}
+/* Card */
+.wcard{
+  position:relative;display:flex;flex-direction:column;align-items:center;
+  padding:14px 8px 36px;border-radius:11px;border:1px solid var(--border);
+  background:var(--surface);cursor:default;transition:all 0.18s;
+  min-height:96px;gap:5px;text-align:center;overflow:hidden;
+}
+.wcard::before{content:'';position:absolute;inset:0;border-radius:11px;background:linear-gradient(135deg,rgba(255,255,255,0.02),transparent);pointer-events:none;}
+.wcard:hover{border-color:var(--border2);background:var(--surface2);transform:translateY(-2px);box-shadow:0 6px 22px rgba(0,0,0,0.4);}
+.wcard.lv1{border-top:2px solid rgba(248,113,113,0.55);}
+.wcard.lv2{border-top:2px solid rgba(251,146,60,0.55);}
+.wcard.lv3{border-top:2px solid rgba(250,204,21,0.55);}
+.wcard.lv4{border-top:2px solid rgba(74,222,128,0.55);}
+.wcard.lv5{border-top:2px solid rgba(74,222,128,0.4);opacity:0.65;}
+.wcard.is-hidden{opacity:0.3;}
+.wcard-word{font-size:0.88rem;font-weight:500;color:var(--text);word-break:break-word;line-height:1.25;width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.wcard-freq{font-size:0.5rem;font-family:'DM Mono',monospace;color:var(--muted);margin-top:1px;}
+.wcard-lv{
+  font-size:0.52rem;font-family:'DM Mono',monospace;font-weight:700;
+  padding:2px 6px;border-radius:4px;margin-top:2px;
+}
+/* Action buttons */
+.wcard-actions{
+  position:absolute;bottom:0;left:0;right:0;
+  display:flex;justify-content:center;gap:3px;
+  padding:5px 5px 5px;
+  background:linear-gradient(to top, rgba(18,18,18,0.98) 60%, transparent);
+  opacity:0;transition:opacity 0.18s;border-radius:0 0 11px 11px;
+}
+.wcard:hover .wcard-actions{opacity:1;}
+.wact{
+  flex:1;background:none;border:1px solid var(--border2);color:var(--muted2);
+  font-size:0.54rem;font-family:'DM Sans',sans-serif;padding:3px 1px;border-radius:5px;
+  cursor:pointer;transition:all 0.12s;line-height:1.3;white-space:nowrap;
+}
+.wact:hover{color:var(--text);border-color:#444;}
+.wact-down:hover{color:var(--l2);border-color:rgba(251,146,60,0.4);}
+.wact-up:hover{color:var(--l4);border-color:rgba(74,222,128,0.4);}
+.wact-master:hover{color:var(--l3);border-color:rgba(250,204,21,0.4);}
+.wact-hide:hover{color:#f87171;border-color:rgba(248,113,113,0.4);}
+/* Toast */
+#toast{position:fixed;bottom:28px;left:50%;transform:translateX(-50%) translateY(10px);
+  background:var(--surface2);border:1px solid var(--border2);color:var(--text);
+  font-size:0.75rem;padding:7px 18px;border-radius:20px;
+  opacity:0;transition:opacity 0.2s,transform 0.2s;pointer-events:none;white-space:nowrap;
+  box-shadow:0 4px 16px rgba(0,0,0,0.4);z-index:99;}
+#toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+.empty{display:flex;flex-direction:column;align-items:center;justify-content:center;
+  gap:12px;color:var(--muted);font-size:0.85rem;padding:80px 0;text-align:center;}
+::-webkit-scrollbar{width:6px;}
+::-webkit-scrollbar-thumb{background:#2a2a2a;border-radius:3px;}
+</style>
+</head>
+<body>
+<header>
+  <span class="hdr-logo">Covenant <em>·</em></span>
+  <span class="hdr-scope">Highlights</span>
+  <span class="hdr-title">${esc(chTitle)}</span>
+  <span class="hdr-count" id="hdr-count">${words.length} words</span>
+</header>
+<div class="toolbar">
+  <input class="tb-search" type="text" placeholder="Filter words…" id="tb-search" oninput="filterGrid()">
+  <div class="tb-sep"></div>
+  <button class="sort-btn active" id="sort-lv"    onclick="sortGrid('lv')">Level</button>
+  <button class="sort-btn"        id="sort-alpha"  onclick="sortGrid('alpha')">A–Z</button>
+  <button class="sort-btn"        id="sort-freq"   onclick="sortGrid('freq')">Freq</button>
+  <div class="tb-sep"></div>
+  <button class="filter-btn active" data-lv="all" id="filter-all" onclick="setFilter('all')">All</button>
+  <button class="filter-btn" data-lv="1"  id="filter-1"   onclick="setFilter('1')">L1</button>
+  <button class="filter-btn" data-lv="2"  id="filter-2"   onclick="setFilter('2')">L2</button>
+  <button class="filter-btn" data-lv="3"  id="filter-3"   onclick="setFilter('3')">L3</button>
+  <button class="filter-btn" data-lv="4"  id="filter-4"   onclick="setFilter('4')">L4</button>
+  <button class="filter-btn" data-lv="5"  id="filter-5"   onclick="setFilter('5')">L5</button>
+</div>
+<div class="grid-wrap">
+  <div class="grid" id="grid"></div>
+  <div class="empty" id="empty" style="display:none;">No words match your filter.</div>
+</div>
+<div id="toast"></div>
+<scr` + `ipt>
+const LV_COLORS = ['','#f87171','#fb923c','#facc15','#4ade80','#4ade80'];
+const LV_BG     = ['','rgba(248,113,113,0.12)','rgba(251,146,60,0.12)','rgba(250,204,21,0.12)','rgba(74,222,128,0.12)','rgba(74,222,128,0.09)'];
+const LV_NAMES  = ['','L1','L2','L3','L4','L5'];
+
+let allWords = ${JSON.stringify(words.map(({word,key,lv,count}) => ({word,key,lv,count,hidden:hidden.has(key)})))};
+let currentSort   = 'lv';
+let currentFilter = 'all';
+
+function esc(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+function renderGrid(list) {
+  const grid  = document.getElementById('grid');
+  const empty = document.getElementById('empty');
+  const count = document.getElementById('hdr-count');
+  if (!list.length) { grid.innerHTML=''; empty.style.display='flex'; count.textContent='0 words'; return; }
+  empty.style.display = 'none';
+  count.textContent = list.length + ' word' + (list.length!==1?'s':'');
+  grid.innerHTML = list.map(w => {
+    const col = LV_COLORS[w.lv]||'#7c3aed';
+    const bg  = LV_BG[w.lv]||'rgba(124,58,237,0.1)';
+    const lbl = LV_NAMES[w.lv]||'';
+    return \`<div class="wcard lv\${w.lv}\${w.hidden?' is-hidden':''}" data-key="\${esc(w.key)}">
+      <div class="wcard-word" title="\${esc(w.word)}">\${esc(w.word)}</div>
+      <div class="wcard-lv" style="background:\${bg};color:\${col};">\${lbl}</div>
+      <div class="wcard-freq">\${w.count}x</div>
+      <div class="wcard-actions">
+        <button class="wact wact-down"   data-action="drop">Down</button>
+        <button class="wact wact-up"     data-action="levelup">Up</button>
+        <button class="wact wact-master" data-action="master">Master</button>
+        <button class="wact wact-hide"   data-action="hide">\${w.hidden?'Show':'Hide'}</button>
+      </div>
+    </div>\`;
+  }).join('');
+}
+
+function getFiltered() {
+  const q = document.getElementById('tb-search').value.toLowerCase().trim();
+  let list = allWords.slice();
+  if (q) list = list.filter(w => w.word.toLowerCase().includes(q));
+  if (currentFilter !== 'all') list = list.filter(w => String(w.lv) === currentFilter);
+  if (currentSort === 'lv')    list.sort((a,b) => a.lv-b.lv || a.word.localeCompare(b.word));
+  if (currentSort === 'alpha') list.sort((a,b) => a.word.localeCompare(b.word));
+  if (currentSort === 'freq')  list.sort((a,b) => b.count-a.count || a.word.localeCompare(b.word));
+  return list;
+}
+function filterGrid() { renderGrid(getFiltered()); }
+function sortGrid(s) {
+  currentSort = s;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('sort-'+s).classList.add('active');
+  renderGrid(getFiltered());
+}
+function setFilter(f) {
+  currentFilter = f;
+  document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+  document.getElementById('filter-'+f).classList.add('active');
+  renderGrid(getFiltered());
+}
+
+function doAction(action, key) {
+  const entry = allWords.find(w => w.key === key);
+  if (!entry) return;
+  let msg = '';
+  if (action === 'drop')    { if (entry.lv <= 1) { showToast('Already at Level 1'); return; } entry.lv--; msg = 'Down: ' + entry.word + ' L' + entry.lv; }
+  if (action === 'levelup') { if (entry.lv >= 5) { showToast('Already at Level 5'); return; } entry.lv++; msg = 'Up: ' + entry.word + ' L' + entry.lv; }
+  if (action === 'master')  { entry.lv = 5; msg = 'Mastered: ' + entry.word; }
+  if (action === 'hide')    { entry.hidden = !entry.hidden; msg = entry.hidden ? 'Hidden' : 'Shown'; }
+  try { window.opener.postMessage({ source: 'covenant-hlgrid', action, key }, '*'); } catch(e) {}
+  showToast(msg);
+  renderGrid(getFiltered());
+}
+
+document.getElementById('grid').addEventListener('click', function(e) {
+  const btn = e.target.closest('[data-action]');
+  if (!btn) return;
+  const card = btn.closest('[data-key]');
+  if (!card) return;
+  doAction(btn.dataset.action, card.dataset.key);
+});
+
+let toastTimer;
+function showToast(msg) {
+  const t = document.getElementById('toast');
+  t.textContent = msg;
+  t.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => t.classList.remove('show'), 2200);
+}
+
+renderGrid(getFiltered());
+</scr` + `ipt>
+</body>
+</html>`;
+
+  const win = window.open('', '_blank');
+  if (!win) { hlToast('⚠ Pop-up blocked — allow pop-ups for this page'); return; }
+  win.document.write(html);
+  win.document.close();
+}
+
+// Listen for level/hide actions from the highlights grid tab
+window.addEventListener('message', function(e) {
+  if (!e.data || e.data.source !== 'covenant-hlgrid') return;
+  const { action, key } = e.data;
+  if (!key) return;
+  if (action === 'hide') {
+    const hidden = _hlpHiddenLoad();
+    if (hidden.has(key)) hidden.delete(key); else hidden.add(key);
+    _hlpHiddenSave(hidden);
+    _hlpApplyHiddenToReader();
+  } else {
+    // level actions
+    const spans = document.querySelectorAll('#chapter-content .pera-hl[data-word="' + CSS.escape(key) + '"]');
+    if (!spans.length) return;
+    const s = spans[0];
+    const si = parseInt(s.dataset.si, 10);
+    if (isNaN(si) || si >= csvSets.length) return;
+    const set   = csvSets[si];
+    const entry = set.words[s.dataset.origWord] || set.words[key];
+    if (!entry) return;
+    const cur = entry.level || 1;
+    let newLv;
+    if (action === 'drop')    newLv = Math.max(1, cur - 1);
+    if (action === 'levelup') newLv = Math.min(5, cur + 1);
+    if (action === 'master')  newLv = 5;
+    if (newLv !== undefined) hlApplyLevel(s, newLv);
+  }
+  if (_hlPanelOpen) hlpRender();
+});
 
 // Called after every chapter load — refresh the sidebar if open
 function refreshUwordsIfOpen() {
