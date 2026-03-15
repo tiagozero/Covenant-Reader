@@ -2243,6 +2243,10 @@ nav {
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="width:13px;height:13px;flex-shrink:0;"><polyline points="16 16 12 12 8 16"/><line x1="12" y1="12" x2="12" y2="21"/><path d="M20.39 18.39A5 5 0 0 0 18 9h-1.26A8 8 0 1 0 3 16.3"/></svg>
     Upload Book
   </button>
+  <a class="icon-btn" id="nav-roadmap-btn" href="roadmap.html" title="Roadmap" style="flex-shrink:0;text-decoration:none;">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><path d="M3 12h18M3 6l9-3 9 3M3 18l9 3 9-3"/></svg>
+    Roadmap
+  </a>
   <button class="icon-btn" id="nav-settings-btn" onclick="openSettingsOverlay()" title="Settings" style="flex-shrink:0;">
     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
     Settings
@@ -6729,9 +6733,10 @@ function renderCsvColorEditor() {
 function toggleReaderSettings(e) { openSettingsOverlay(); }
 
 // ── Tooltip state ─────────────────────────────────
-let _tipOpenSpan = null;
-let _tipPinned   = false;
-let _tipEditMode = false;
+let _tipOpenSpan  = null;
+let _hoveredSpan  = null; // tracks which .pera-hl the mouse is over right now
+let _tipPinned    = false;
+let _tipEditMode  = false;
 
 const _tip = (() => {
   const el = document.createElement('div');
@@ -6741,6 +6746,17 @@ const _tip = (() => {
   document.body.appendChild(el);
   return el;
 })();
+
+// ── Hover tracking — keep _hoveredSpan current so shortcuts work without tooltip ──
+document.addEventListener('mouseover', e => {
+  const span = e.target.closest('.pera-hl');
+  _hoveredSpan = span || null;
+}, { passive: true });
+document.addEventListener('mouseout', e => {
+  if (_hoveredSpan && !_hoveredSpan.contains(e.relatedTarget)) {
+    _hoveredSpan = null;
+  }
+}, { passive: true });
 
 // ── Tooltip position helper ────────────────────────
 function _positionTip(span) {
@@ -8254,7 +8270,10 @@ document.addEventListener('keydown', e => {
     return;
   }
 
-  if (!_tipOpenSpan && !_tipSidebarOpen) return;
+  // Resolve the active span: prefer open tooltip, fall back to hovered span
+  const _activeSpan = _tipOpenSpan || _hoveredSpan;
+
+  if (!_activeSpan && !_tipSidebarOpen) return;
   const tag = document.activeElement?.tagName;
   if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT') return;
 
@@ -8274,46 +8293,82 @@ document.addEventListener('keydown', e => {
   }
 
   if (!_tipEditMode) {
-    if (e.key === '1') { e.preventDefault(); hlVfAction(_tipOpenSpan, 'drop'); }
-    if (e.key === '2') { e.preventDefault(); hlVfAction(_tipOpenSpan, 'levelup'); }
-    if (e.key === '3') { e.preventDefault(); hlVfAction(_tipOpenSpan, 'master'); }
-    if (e.key === 'e' || e.key === 'E') {
-      e.preventDefault();
-      const si    = parseInt(_tipOpenSpan.dataset.si, 10);
-      const set   = csvSets[si];
-      const entry = set?.words[_tipOpenSpan.dataset.origWord] || set?.words[_tipOpenSpan.dataset.word] || {};
-      _showTipEditMode(_tipOpenSpan, _tipOpenSpan.dataset.word, entry, set);
-    }
-    if (e.key === 'p' || e.key === 'P') {
-      e.preventDefault();
-      _tipPinned = !_tipPinned;
-      const pinBtn = _tip.querySelector('#tip-btn-pin');
-      if (pinBtn) pinBtn.classList.toggle('pinned', _tipPinned);
-    }
-    // M — toggle Focus (mine to study list)
-    // Routes to sidebar button (#tsb-btn-focus) or floating tip button (#tip-btn-focus)
-    if (e.key === 'm' || e.key === 'M') {
-      e.preventDefault();
-      if (peraSettings.sidebarTooltip) {
-        document.querySelector('#tsb-body #tsb-btn-focus')?.click();
-      } else {
-        _tip.querySelector('#tip-btn-focus')?.click();
+    // ── Word-action shortcuts: work from hover OR open tooltip ──────────────
+    // When the tooltip is open we use _tipOpenSpan (existing behaviour).
+    // When the tooltip is NOT open (e.g. click-to-show mode, or sidebar mode)
+    // we use _hoveredSpan so shortcuts fire silently while reading.
+    if (_activeSpan) {
+      if (e.key === '1') { e.preventDefault(); hlVfAction(_activeSpan, 'drop'); }
+      if (e.key === '2') { e.preventDefault(); hlVfAction(_activeSpan, 'levelup'); }
+      if (e.key === '3') { e.preventDefault(); hlVfAction(_activeSpan, 'master'); }
+
+      // M — toggle Focus
+      if (e.key === 'm' || e.key === 'M') {
+        e.preventDefault();
+        // If the tooltip is open, click its button (updates the UI state too)
+        if (_tipOpenSpan) {
+          if (peraSettings.sidebarTooltip) {
+            document.querySelector('#tsb-body #tsb-btn-focus')?.click();
+          } else {
+            _tip.querySelector('#tip-btn-focus')?.click();
+          }
+        } else {
+          // Tooltip not open — act directly on the hovered span
+          const w = (_activeSpan.dataset.origWord || _activeSpan.dataset.word || '').toLowerCase();
+          if (_hlIsFocused(w)) {
+            _hlUnfocusWord(w);
+            hlToast(`☆ "${w}" removed from Focus`);
+          } else {
+            _hlFocusWord(w);
+            hlToast(`★ "${w}" added to Focus`);
+          }
+          if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+        }
+      }
+
+      // I — toggle Ignore
+      if (e.key === 'i' || e.key === 'I') {
+        e.preventDefault();
+        if (_tipOpenSpan) {
+          if (peraSettings.sidebarTooltip) {
+            document.querySelector('#tsb-body #tsb-btn-ignore')?.click();
+          } else {
+            _tip.querySelector('#tip-btn-hl-ignore')?.click();
+          }
+        } else {
+          const w = (_activeSpan.dataset.origWord || _activeSpan.dataset.word || '').toLowerCase();
+          if (_hlIsIgnored(w)) {
+            _hlUnignoreWord(w);
+            hlToast(`↩ "${w}" unignored`);
+          } else {
+            _hlIgnoreWord(w);
+            hlToast(`✕ "${w}" ignored`);
+          }
+          _hlTrie = null; applyHighlights();
+        }
       }
     }
-    // I — toggle Ignore for this word
-    // Routes to sidebar button (#tsb-btn-ignore) or floating tip button (#tip-btn-hl-ignore)
-    if (e.key === 'i' || e.key === 'I') {
-      e.preventDefault();
-      if (peraSettings.sidebarTooltip) {
-        document.querySelector('#tsb-body #tsb-btn-ignore')?.click();
-      } else {
-        _tip.querySelector('#tip-btn-hl-ignore')?.click();
+
+    // ── Shortcuts that only make sense when the tooltip is actually open ─────
+    if (_tipOpenSpan) {
+      if (e.key === 'e' || e.key === 'E') {
+        e.preventDefault();
+        const si    = parseInt(_tipOpenSpan.dataset.si, 10);
+        const set   = csvSets[si];
+        const entry = set?.words[_tipOpenSpan.dataset.origWord] || set?.words[_tipOpenSpan.dataset.word] || {};
+        _showTipEditMode(_tipOpenSpan, _tipOpenSpan.dataset.word, entry, set);
       }
-    }
-    if (e.key === 'Shift' && peraSettings.dictEnabled) {
-      e.preventDefault();
-      const lookupWord = _tipOpenSpan.dataset.origWord || _tipOpenSpan.textContent.trim();
-      openDictSidebar(lookupWord);
+      if (e.key === 'p' || e.key === 'P') {
+        e.preventDefault();
+        _tipPinned = !_tipPinned;
+        const pinBtn = _tip.querySelector('#tip-btn-pin');
+        if (pinBtn) pinBtn.classList.toggle('pinned', _tipPinned);
+      }
+      if (e.key === 'Shift' && peraSettings.dictEnabled) {
+        e.preventDefault();
+        const lookupWord = _tipOpenSpan.dataset.origWord || _tipOpenSpan.textContent.trim();
+        openDictSidebar(lookupWord);
+      }
     }
   }
 });
