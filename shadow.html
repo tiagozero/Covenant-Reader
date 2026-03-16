@@ -220,7 +220,7 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
 
 
 /* TOOLTIP & MODALS */
-#sel-tt{position:fixed;background:#18181B;color:#fff;border-radius:7px;padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;z-index:900;display:none;align-items:center;gap:5px;box-shadow:var(--sh3);pointer-events:all;transform:translateX(-50%)}
+#sel-tt{position:fixed;background:#18181B;color:#fff;border-radius:7px;padding:5px 8px;font-size:12px;font-family:'DM Sans',sans-serif;z-index:900;display:none;align-items:center;gap:5px;box-shadow:var(--sh3);pointer-events:all;transform:translateX(-50%) translateY(calc(-100% - 10px))}
 #sel-tt::after{content:'';position:absolute;bottom:-6px;left:50%;transform:translateX(-50%);border:6px solid transparent;border-bottom:none;border-top-color:#18181B}
 .tt-btn{background:rgba(255,255,255,.12);border:1px solid rgba(255,255,255,.18);color:#fff;border-radius:4px;padding:3px 9px;font-size:11px;font-family:'DM Sans',sans-serif;cursor:pointer;white-space:nowrap;transition:background .12s}
 .tt-btn:hover{background:rgba(255,255,255,.25)}
@@ -321,42 +321,93 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
 
     <!-- RULES PANE -->
     <div class="hv-pane" id="hp-rules">
-      <div class="st-box">
-        <div class="st-h">Backup & Restore</div>
-        <p style="font-size:13px;color:var(--tx3);margin-bottom:14px;">Export your global rules and settings to a file, or import an existing backup.</p>
-        <div style="display:flex;gap:10px;">
-          <button class="btn" onclick="exportRules()">⬇ Export Backup</button>
-          <label class="btn" style="margin:0;">
-            ⬆ Import Backup
-            <input type="file" accept=".json" style="display:none" onchange="importRules(this.files[0])">
-          </label>
-        </div>
-      </div>
+      <div style="display:grid;grid-template-columns:1fr 300px;gap:24px;align-items:start;">
 
-      <div class="st-box">
-        <div class="lib-header" style="margin-bottom:12px;">
-          <div class="st-h" style="margin:0;">All Global Rules</div>
-          <div style="position:relative;">
-            <span style="position:absolute; left:10px; top:50%; transform:translateY(-50%); font-size:13px; color:var(--tx3); pointer-events:none;">🔍</span>
-            <input type="text" id="rule-search" class="fi" placeholder="Search rules..." oninput="renderAllRules()" style="width:230px; padding-left:30px;">
+        <!-- LEFT COLUMN: Rules table -->
+        <div>
+          <!-- Toolbar: search + filters + add -->
+          <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-bottom:14px;">
+            <div style="position:relative;flex:1;min-width:140px;">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--tx3);pointer-events:none;">🔍</span>
+              <input type="text" id="rule-search" class="fi" placeholder="Search rules…" oninput="renderAllRules()" style="padding-left:30px;">
+            </div>
+            <select id="rule-type-filter" class="fi" onchange="renderAllRules()" style="width:120px;flex-shrink:0;">
+              <option value="">All types</option>
+            </select>
+            <select id="rule-sort" class="fi" onchange="renderAllRules()" style="width:112px;flex-shrink:0;">
+              <option value="newest">Newest first</option>
+              <option value="oldest">Oldest first</option>
+              <option value="alpha">A → Z</option>
+            </select>
+            <button class="btn pri" onclick="openAddRuleDialog()">+ Add Rule</button>
+          </div>
+
+          <!-- Stats + page size -->
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;flex-wrap:wrap;gap:8px;">
+            <span id="rules-stats" style="font-size:12px;color:var(--tx3);"></span>
+            <div style="display:flex;align-items:center;gap:6px;">
+              <span style="font-size:12px;color:var(--tx3);">Per page:</span>
+              <div style="display:flex;gap:3px;" id="rules-perpage-btns">
+                <button class="btn on" id="rpp-20" onclick="setRulesPerPage(20)">20</button>
+                <button class="btn" id="rpp-50" onclick="setRulesPerPage(50)">50</button>
+                <button class="btn" id="rpp-100" onclick="setRulesPerPage(100)">100</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Rules table -->
+          <div style="background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--sh);margin-bottom:14px;">
+            <table id="rules-table" style="width:100%;border-collapse:collapse;">
+              <thead>
+                <tr style="background:var(--s2);border-bottom:2px solid var(--border);">
+                  <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);">Original</th>
+                  <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);">Connected Form</th>
+                  <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);">Type</th>
+                  <th style="padding:9px 14px;text-align:left;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--tx3);">Note</th>
+                  <th style="padding:9px 8px;width:32px;"></th>
+                </tr>
+              </thead>
+              <tbody id="all-rules-tbody"></tbody>
+            </table>
+            <div id="all-rules-empty" style="display:none;padding:32px;text-align:center;font-size:13px;color:var(--tx3);"></div>
+          </div>
+
+          <!-- Pagination -->
+          <div id="rules-pagination" style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;"></div>
+        </div>
+
+        <!-- RIGHT COLUMN: Rule Types + Backup -->
+        <div style="position:sticky;top:20px;">
+          <!-- Rule Types & Settings -->
+          <div class="st-box">
+            <div class="st-h">Rule Types & Settings</div>
+            <p style="font-size:12px;color:var(--tx3);margin-bottom:12px;">Define types and map them to colors for highlights.</p>
+            <div id="rt-list" style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;padding:4px;background:var(--bg);"></div>
+            <div style="display:flex;gap:5px;margin-bottom:14px;">
+              <input id="rt-new-name" class="fi" placeholder="New type…" style="font-size:11px;">
+              <input type="color" id="rt-new-color" value="#E11D48" style="width:32px;height:32px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface);flex-shrink:0;">
+              <button class="btn" onclick="addRuleType()" style="flex-shrink:0;">Add</button>
+            </div>
+            <label style="display:flex;align-items:center;gap:8px;font-size:12px;font-weight:500;cursor:pointer;color:var(--tx2);border-top:1px solid var(--border);padding-top:14px;">
+              <input type="checkbox" id="rt-colorize" onchange="toggleColorize(this.checked)" style="width:15px;height:15px;flex-shrink:0;">
+              Highlight rule types in text
+            </label>
+          </div>
+
+          <!-- Backup & Restore -->
+          <div class="st-box">
+            <div class="st-h">Backup & Restore</div>
+            <p style="font-size:12px;color:var(--tx3);margin-bottom:14px;">Export rules to a file or import a backup.</p>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              <button class="btn" onclick="exportRules()" style="width:100%;justify-content:center;">⬇ Export Backup</button>
+              <label class="btn" style="margin:0;width:100%;justify-content:center;cursor:pointer;">
+                ⬆ Import Backup
+                <input type="file" accept=".json" style="display:none" onchange="importRules(this.files[0])">
+              </label>
+            </div>
           </div>
         </div>
-        <div id="all-rules-list" style="max-height: 300px; overflow-y: auto; padding-right: 4px;"></div>
-      </div>
 
-      <div class="st-box">
-        <div class="st-h">Rule Types & Settings</div>
-        <p style="font-size:13px;color:var(--tx3);margin-bottom:14px;">Define the phonetic rule types (e.g. Linking, Elision) and map them to colors for highlights.</p>
-        <div id="rt-list" style="margin-bottom:12px;border:1px solid var(--border);border-radius:8px;padding:4px;background:var(--bg);"></div>
-        <div style="display:flex;gap:6px;margin-bottom:16px;">
-          <input id="rt-new-name" class="fi" placeholder="New rule type (e.g. Flap T)">
-          <input type="color" id="rt-new-color" value="#E11D48" style="width:36px;height:32px;padding:0;border:1px solid var(--border);border-radius:6px;cursor:pointer;background:var(--surface);">
-          <button class="btn" onclick="addRuleType()">Add</button>
-        </div>
-        <label style="display:flex;align-items:center;gap:8px;font-size:13px;font-weight:500;cursor:pointer;color:var(--tx2);border-top:1px solid var(--border);padding-top:16px;">
-          <input type="checkbox" id="rt-colorize" onchange="toggleColorize(this.checked)" style="width:16px;height:16px;">
-          Highlight rule types with their mapped colors inside the text
-        </label>
       </div>
     </div>
 
@@ -609,6 +660,21 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
       <button class="sm" onclick="playRec()">▶ Play</button>
       <button class="sm save-r" onclick="saveRecToLesson()">⬆ Save</button>
       <button class="sm" onclick="clearRec()">✕ Discard</button>
+    </div>
+  </div>
+</div>
+
+<!-- Add Rule Dialog (home) -->
+<div class="bd" id="m-add-rule">
+  <div class="modal" style="width:380px;">
+    <div class="modal-h">Add Global Rule</div>
+    <div class="fg"><label class="fl">Original Text</label><input id="ar-orig" class="fi" placeholder="e.g. want to"></div>
+    <div class="fg"><label class="fl">Connected Form</label><input id="ar-phon" class="fi" placeholder="e.g. wanna"></div>
+    <div class="fg"><label class="fl">Type</label><select id="ar-type" class="fs"></select></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Note <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input id="ar-note" class="fi" placeholder="Short explanation…"></div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeM('m-add-rule')">Cancel</button>
+      <button class="btn pri" onclick="saveAddRuleDialog()">Save Rule</button>
     </div>
   </div>
 </div>
@@ -998,7 +1064,7 @@ function switchHomeTab(tab){
   $('hp-rules').classList.toggle('on', tab==='rules');
   $('hp-settings').classList.toggle('on', tab==='settings');
   if(isLib) renderLibrary();
-  else if(tab==='rules'){updRuleTypesList();$('rt-colorize').checked=hlColors;renderAllRules();}
+  else if(tab==='rules'){updRuleTypesList();updRuleTypeFilter();$('rt-colorize').checked=hlColors;renderAllRules();}
   else if(tab==='settings') applyCountdownSetting();
 }
 
@@ -1078,21 +1144,143 @@ function delRuleType(id){
 }
 function toggleColorize(val){hlColors=val;localStorage.setItem('shadow_hlcolors',hlColors);injectRuleStyles()}
 
+let rulesPage = 0;
+let rulesPerPage = 20;
+
+function setRulesPerPage(n){
+  rulesPerPage = n;
+  rulesPage = 0;
+  ['20','50','100'].forEach(v=>{ const b=$('rpp-'+v); if(b) b.classList.toggle('on', parseInt(v)===n); });
+  renderAllRules();
+}
+
+function updRuleTypeFilter(){
+  const sel=$('rule-type-filter');
+  if(!sel) return;
+  const cur = sel.value;
+  sel.innerHTML = '<option value="">All types</option>' +
+    ruleTypes.map(rt=>`<option value="${rt.id}"${rt.id===cur?' selected':''}>${esc(rt.name)}</option>`).join('');
+  // Also keep Add Rule dialog select in sync
+  const arSel=$('ar-type');
+  if(arSel) arSel.innerHTML=ruleTypes.map(rt=>`<option value="${rt.id}">${esc(rt.name)}</option>`).join('');
+}
+
 function renderAllRules(){
-  const list=$('all-rules-list');if(!list)return;
-  const q=$('rule-search')?$('rule-search').value.toLowerCase().trim():'';
-  let filtered=globalRules;
-  if(q) filtered=globalRules.filter(r=>r.orig.toLowerCase().includes(q)||r.phon.toLowerCase().includes(q)||(r.note&&r.note.toLowerCase().includes(q))||getRuleTypeName(r.type).toLowerCase().includes(q));
-  if(!filtered.length){list.innerHTML=`<div class="hint" style="padding:20px;border:1px dashed var(--border);border-radius:10px;">${q?'No rules matching "'+esc(q)+'"':'No global rules found. Open a lesson and create rules!'}</div>`;return}
-  const sorted=[...filtered].sort((a,b)=>b.createdAt-a.createdAt);
-  list.innerHTML=sorted.map(r=>`
-    <div class="rule-card">
-      <button class="rule-del" onclick="deleteGlobalRule('${r.id}')">✕</button>
-      <div class="rule-orig">${esc(r.orig)}</div>
-      <div class="rule-phon">→ ${esc(r.phon)}</div>
-      <span class="rule-badge ${r.type}">${esc(getRuleTypeName(r.type))}</span>
-      ${r.note?`<div class="rule-note">${esc(r.note)}</div>`:''}
-    </div>`).join('');
+  const tbody=$('all-rules-tbody');
+  const empty=$('all-rules-empty');
+  const stats=$('rules-stats');
+  const pg=$('rules-pagination');
+  if(!tbody) return;
+
+  const q=($('rule-search')||{}).value?.toLowerCase().trim()||'';
+  const typeF=($('rule-type-filter')||{}).value||'';
+  const sort=($('rule-sort')||{}).value||'newest';
+
+  let filtered=globalRules.filter(r=>{
+    const matchQ=!q||(r.orig.toLowerCase().includes(q)||r.phon.toLowerCase().includes(q)||(r.note&&r.note.toLowerCase().includes(q))||getRuleTypeName(r.type).toLowerCase().includes(q));
+    const matchT=!typeF||r.type===typeF;
+    return matchQ&&matchT;
+  });
+
+  if(sort==='newest') filtered=[...filtered].sort((a,b)=>b.createdAt-a.createdAt);
+  else if(sort==='oldest') filtered=[...filtered].sort((a,b)=>a.createdAt-b.createdAt);
+  else if(sort==='alpha') filtered=[...filtered].sort((a,b)=>a.orig.localeCompare(b.orig));
+
+  const total=filtered.length;
+  const totalPages=Math.max(1,Math.ceil(total/rulesPerPage));
+  if(rulesPage>=totalPages) rulesPage=Math.max(0,totalPages-1);
+
+  const pageItems=filtered.slice(rulesPage*rulesPerPage,(rulesPage+1)*rulesPerPage);
+
+  if(stats) stats.textContent=total===0?'No rules':`${total.toLocaleString()} rule${total!==1?'s':''} · page ${rulesPage+1} of ${totalPages}`;
+
+  if(!total){
+    tbody.innerHTML='';
+    if(empty){empty.style.display='block';empty.textContent=q||typeF?'No rules match your filters.':'No global rules yet. Open a lesson, select text, and tap + Rule to get started.';}
+    if(pg) pg.innerHTML='';
+    return;
+  }
+  if(empty) empty.style.display='none';
+
+  tbody.innerHTML=pageItems.map((r,idx)=>{
+    const rt=ruleTypes.find(x=>x.id===r.type);
+    const dotColor=rt?rt.color:'var(--border2)';
+    const even=(rulesPage*rulesPerPage+idx)%2===0;
+    return `<tr style="border-bottom:1px solid var(--border);${even?'':'background:var(--s2)'}">
+      <td style="padding:9px 14px;font-size:13px;font-weight:600;color:var(--tx);">${esc(r.orig)}</td>
+      <td style="padding:9px 14px;font-size:13px;color:var(--pri);font-weight:600;">→ ${esc(r.phon)}</td>
+      <td style="padding:9px 14px;">
+        <span style="display:inline-flex;align-items:center;gap:5px;font-size:11px;font-weight:600;color:var(--tx2);">
+          <span style="width:8px;height:8px;border-radius:50%;background:${dotColor};display:inline-block;flex-shrink:0;"></span>
+          ${esc(getRuleTypeName(r.type))}
+        </span>
+      </td>
+      <td style="padding:9px 14px;font-size:12px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.note?esc(r.note):'—'}</td>
+      <td style="padding:9px 8px;text-align:center;">
+        <button class="rule-del" style="position:static;" onclick="deleteGlobalRule('${r.id}')" title="Delete">✕</button>
+      </td>
+    </tr>`;
+  }).join('');
+
+  // Pagination
+  if(pg){
+    if(totalPages<=1){pg.innerHTML='';return;}
+    const maxBtn=7;
+    let pages=[];
+    if(totalPages<=maxBtn){
+      for(let i=0;i<totalPages;i++) pages.push(i);
+    } else {
+      pages=[0];
+      let lo=Math.max(1,rulesPage-2),hi=Math.min(totalPages-2,rulesPage+2);
+      if(lo>1) pages.push('…');
+      for(let i=lo;i<=hi;i++) pages.push(i);
+      if(hi<totalPages-2) pages.push('…');
+      pages.push(totalPages-1);
+    }
+    pg.innerHTML=`
+      <button class="btn" onclick="goRulesPage(${rulesPage-1})" ${rulesPage===0?'disabled':''}>‹ Prev</button>
+      ${pages.map(p=>p==='…'
+        ?`<span style="padding:0 4px;color:var(--tx3);">…</span>`
+        :`<button class="btn${p===rulesPage?' on':''}" onclick="goRulesPage(${p})" style="min-width:32px;">${p+1}</button>`
+      ).join('')}
+      <button class="btn" onclick="goRulesPage(${rulesPage+1})" ${rulesPage>=totalPages-1?'disabled':''}>Next ›</button>`;
+  }
+}
+
+function goRulesPage(n){
+  const total=Math.ceil(filteredRulesCount()/rulesPerPage)||1;
+  rulesPage=Math.max(0,Math.min(n,total-1));
+  renderAllRules();
+  // scroll to top of table
+  const t=$('rules-table');if(t) t.scrollIntoView({behavior:'smooth',block:'nearest'});
+}
+
+function filteredRulesCount(){
+  const q=($('rule-search')||{}).value?.toLowerCase().trim()||'';
+  const typeF=($('rule-type-filter')||{}).value||'';
+  return globalRules.filter(r=>{
+    const mq=!q||(r.orig.toLowerCase().includes(q)||r.phon.toLowerCase().includes(q)||(r.note&&r.note.toLowerCase().includes(q))||getRuleTypeName(r.type).toLowerCase().includes(q));
+    return mq&&(!typeF||r.type===typeF);
+  }).length;
+}
+
+function openAddRuleDialog(){
+  // Sync select options
+  const sel=$('ar-type');
+  if(sel) sel.innerHTML=ruleTypes.map(rt=>`<option value="${rt.id}">${esc(rt.name)}</option>`).join('');
+  $('ar-orig').value='';$('ar-phon').value='';$('ar-note').value='';
+  openM('m-add-rule');
+  setTimeout(()=>$('ar-orig').focus(),80);
+}
+function saveAddRuleDialog(){
+  const orig=$('ar-orig').value.trim(),phon=$('ar-phon').value.trim(),type=$('ar-type').value,note=$('ar-note').value.trim();
+  if(!orig||!phon){alert('Fill in Original Text and Connected Form.');return}
+  const existing=globalRules.findIndex(r=>r.orig.toLowerCase()===orig.toLowerCase());
+  if(existing>=0){globalRules[existing]={...globalRules[existing],phon,type,note}}
+  else{globalRules.push({id:uid(),orig,phon,type,note,createdAt:Date.now()})}
+  saveGlobalRules();closeM('m-add-rule');
+  rulesPage=0;renderAllRules();updRulesSidebar();
+  if($('player-view').style.display!=='none') updStage();
 }
 
 function updRulesSidebar(){
@@ -1112,7 +1300,7 @@ function updRulesSidebar(){
 }
 function deleteGlobalRule(id){
   if(!confirm('Delete this global rule?'))return;
-  globalRules=globalRules.filter(r=>r.id!==id);saveGlobalRules();renderAllRules();updRulesSidebar();
+  globalRules=globalRules.filter(r=>r.id!==id);saveGlobalRules();rulesPage=0;renderAllRules();updRulesSidebar();
   if($('player-view').style.display!=='none')updStage();
 }
 
@@ -1129,7 +1317,7 @@ function importRules(file){
       if(d.globalRules){globalRules=d.globalRules;saveGlobalRules()}
       if(d.ruleTypes){ruleTypes=d.ruleTypes;saveRuleTypes()}
       if(typeof d.hlColors!=='undefined'){hlColors=d.hlColors;localStorage.setItem('shadow_hlcolors',hlColors)}
-      injectRuleStyles();updRuleTypeSelect();renderAllRules();updRuleTypesList();
+      injectRuleStyles();updRuleTypeSelect();updRuleTypeFilter();rulesPage=0;renderAllRules();updRuleTypesList();
       alert('Import successful!');
     }catch(err){alert('Invalid backup file.')}
   };r.readAsText(file);
@@ -2108,7 +2296,7 @@ document.addEventListener('mouseup',e=>{
   const tt=$('sel-tt');
   $('tt-lbl').textContent='"'+txt+'"';
   tt.style.left=(r.left+r.width/2)+'px';
-  tt.style.top=(r.top-4)+'px';
+  tt.style.top=r.top+'px';
   tt.style.display='flex';
 });
 document.addEventListener('mousedown',e=>{if(!e.target.closest('#sel-tt')&&!e.target.closest('#rule-panel'))hideTT()});
@@ -2120,8 +2308,12 @@ function openRulePanel(){
   if(ruleTypes.length>0)$('rp-type').value=ruleTypes[0].id;
   const p=$('rule-panel');p.style.display='block';
   const tt=$('sel-tt');
-  let lx=parseFloat(tt.style.left||'300')-134,ly=parseFloat(tt.style.top||'200')+30;
-  lx=Math.max(8,Math.min(lx,window.innerWidth-280));ly=Math.max(8,Math.min(ly,window.innerHeight-350));
+  // Open rule panel below the selected text (tooltip top = selection top, panel opens below)
+  const selTop=parseFloat(tt.style.top||'200');
+  let lx=parseFloat(tt.style.left||'300')-134;
+  let ly=selTop+24; // just below the selection line
+  lx=Math.max(8,Math.min(lx,window.innerWidth-280));
+  ly=Math.max(8,Math.min(ly,window.innerHeight-350));
   p.style.left=lx+'px';p.style.top=ly+'px';
 }
 function closeRulePanel(){$('rule-panel').style.display='none'}
