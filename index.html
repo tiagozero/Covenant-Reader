@@ -1172,6 +1172,58 @@ nav {
   outline: 2px solid var(--cs-color, #d97706);
   outline-offset: 1px;
 }
+/* Gloss mode — original text shown, connected form appears in hover tooltip */
+.pera-cs.cs-gloss {
+  font-style: normal;
+  color: inherit;
+  background: var(--cs-bg, rgba(245,158,11,0.13));
+  border-bottom: 2px dotted var(--cs-color, #d97706);
+  border-radius: 2px;
+  padding: 1px 2px;
+  margin: 0 1px;
+  cursor: default;
+  font-weight: inherit;
+  position: relative;
+}
+.pera-cs.cs-gloss:hover {
+  background: var(--cs-bg-hover, rgba(245,158,11,0.26));
+}
+/* Gloss tooltip bubble */
+.cs-gloss-tip {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+  position: absolute;
+  bottom: calc(100% + 7px);
+  left: 50%;
+  transform: translateX(-50%);
+  background: #1e1e1e;
+  border: 1px solid rgba(245,158,11,0.45);
+  border-radius: 8px;
+  padding: 5px 10px;
+  white-space: nowrap;
+  font-style: italic;
+  color: var(--cs-color, #d97706);
+  font-size: 0.85em;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  box-shadow: 0 6px 20px rgba(0,0,0,0.55);
+  transition: opacity 0.13s ease, visibility 0.13s ease;
+  z-index: 9999;
+}
+.cs-gloss-tip::after {
+  content: '';
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  border: 5px solid transparent;
+  border-top-color: rgba(245,158,11,0.45);
+}
+.pera-cs.cs-gloss:hover .cs-gloss-tip {
+  visibility: visible;
+  opacity: 1;
+}
 
 /* ── Connected-Speech click tooltip ── */
 #cs-click-tip {
@@ -3237,7 +3289,7 @@ const kvSync = {
 // ════════════════════════════════════════════════════
 // SETTINGS STATE — declared early to avoid TDZ errors
 // ════════════════════════════════════════════════════
-let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, sidebarTooltip: false };
+let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false };
 
 // ════════════════════════════════════════════════════
 // HAMBURGER MENU
@@ -6650,7 +6702,10 @@ function openSettingsOverlay() {
       if (sovCSExtra) sovCSExtra.style.display = peraSettings.connectedSpeech ? '' : 'none';
       if (!peraSettings.connectedSpeech) {
         peraSettings.csActive = false;
+        peraSettings.csGloss = false;
         if (togCSActive) togCSActive.classList.remove('on');
+        const _togCSGloss = document.getElementById('tog-cs-gloss');
+        if (_togCSGloss) _togCSGloss.classList.remove('on');
         csRemoveHighlights();
       }
       settingsSave();
@@ -6664,6 +6719,19 @@ function openSettingsOverlay() {
       settingsSave();
       if (document.getElementById('reader-view')?.style.display === 'block') {
         peraSettings.csActive ? csApplyHighlights() : csRemoveHighlights();
+      }
+    };
+  }
+  // Gloss toggle
+  const togCSGloss = document.getElementById('tog-cs-gloss');
+  if (togCSGloss) {
+    togCSGloss.classList.toggle('on', peraSettings.csGloss);
+    togCSGloss.onclick = () => {
+      peraSettings.csGloss = !peraSettings.csGloss;
+      togCSGloss.classList.toggle('on', peraSettings.csGloss);
+      settingsSave();
+      if (document.getElementById('reader-view')?.style.display === 'block') {
+        if (peraSettings.connectedSpeech) csApplyHighlights(); else csRemoveHighlights();
       }
     };
   }
@@ -11009,11 +11077,20 @@ function csApplyHighlights() {
         var before = node.nodeValue.slice(0, startInfo.offset);
         var after  = node.nodeValue.slice(endInfo.offset + 1);
         var span   = document.createElement("span");
-        span.className      = "pera-cs";
+        var _glossMode = peraSettings.csGloss;
+        span.className      = "pera-cs" + (_glossMode ? " cs-gloss" : "");
         span.dataset.csOrig = rule.orig;
         span.dataset.csForm = rule.form;
-        span.textContent    = dispForm;
-        span.title          = rule.orig + (rule.note ? "  \u2014  " + rule.note : "");
+        if (_glossMode) {
+          span.textContent = match.matched;
+          var _tipEl = document.createElement("span");
+          _tipEl.className = "cs-gloss-tip";
+          _tipEl.textContent = dispForm;
+          span.appendChild(_tipEl);
+        } else {
+          span.textContent = dispForm;
+          span.title = rule.orig + (rule.note ? "  \u2014  " + rule.note : "");
+        }
         _applyCSStyle(span);
         var frag = document.createDocumentFragment();
         if (before) frag.appendChild(document.createTextNode(before));
@@ -11056,11 +11133,20 @@ function csApplyHighlights() {
         // endTop is an element — no text suffix to preserve
 
         var span2 = document.createElement("span");
-        span2.className      = "pera-cs";
+        var _glossMode2 = peraSettings.csGloss;
+        span2.className      = "pera-cs" + (_glossMode2 ? " cs-gloss" : "");
         span2.dataset.csOrig = rule.orig;
         span2.dataset.csForm = rule.form;
-        span2.textContent    = dispForm;
-        span2.title          = rule.orig + (rule.note ? "  \u2014  " + rule.note : "");
+        if (_glossMode2) {
+          span2.textContent = match.matched;
+          var _tipEl2 = document.createElement("span");
+          _tipEl2.className = "cs-gloss-tip";
+          _tipEl2.textContent = dispForm;
+          span2.appendChild(_tipEl2);
+        } else {
+          span2.textContent = dispForm;
+          span2.title = rule.orig + (rule.note ? "  \u2014  " + rule.note : "");
+        }
         _applyCSStyle(span2);
 
         var frag2 = document.createDocumentFragment();
@@ -11210,9 +11296,9 @@ var _csTip = (function () {
       return;
     }
 
-    /* 2. click on a .pera-cs span — open tooltip */
+    /* 2. click on a .pera-cs span — open tooltip (skip in gloss mode) */
     var span = e.target.closest ? e.target.closest('.pera-cs') : null;
-    if (span) {
+    if (span && !span.classList.contains('cs-gloss')) {
       e.stopPropagation(); // prevent existing click handlers from also firing
       _open(span);
       return;
@@ -13675,6 +13761,13 @@ function refreshUwordsIfOpen() {
             <div class="sov-row-sub">Show words in their connected speech form in the reader (italicised amber text, like <em style="color:#f59e0b;">wanna</em> for <em>want to</em>)</div>
           </div>
           <div class="pera-tog" id="tog-cs-active"><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
+        </div>
+        <div class="sov-row">
+          <div>
+            <div class="sov-row-label">Gloss</div>
+            <div class="sov-row-sub">Highlight the <strong style="color:var(--text)">original form</strong> in the text with a dotted underline &mdash; hover to see the connected speech form in a tooltip</div>
+          </div>
+          <div class="pera-tog" id="tog-cs-gloss"><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
         </div>
       </div>
     </div>
