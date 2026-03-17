@@ -1297,7 +1297,7 @@ nav {
   border-radius: 2px;
   padding: 1px 2px;
   margin: 0 1px;
-  cursor: default;
+  cursor: pointer;
   font-weight: inherit;
   position: relative;
 }
@@ -1326,6 +1326,12 @@ nav {
   box-shadow: 0 6px 20px rgba(0,0,0,0.55);
   transition: opacity 0.13s ease, visibility 0.13s ease;
   z-index: 9999;
+}
+.cs-gloss-tip::before {
+  content: '✎ ';
+  font-style: normal;
+  font-size: 0.78em;
+  opacity: 0.6;
 }
 .cs-gloss-tip::after {
   content: '';
@@ -8827,6 +8833,16 @@ document.addEventListener('mousemove', e => {
   }, 350);
 });
 
+// ── connSyncClickMode — sync cursor style on all .pera-hl spans ──────────────
+// Called whenever the "Click to Show Tooltip" setting changes so spans
+// immediately show the right cursor without needing a full highlight rebuild.
+function connSyncClickMode() {
+  const cursor = peraSettings.clickTooltip ? 'pointer' : '';
+  document.querySelectorAll('#chapter-content .pera-hl').forEach(s => {
+    s.style.cursor = cursor;
+  });
+}
+
 // ── Click mode ────────────────────────────────────
 let _masteryClickMap = new WeakMap(); // span → {count, timer}
 
@@ -11528,8 +11544,12 @@ var _csTip = (function () {
     _close();
     _span = span;
     span.classList.add('cs-active-tip');
-    $id('csct-orig-val').textContent = span.dataset.csOrig || '';
-    $id('csct-form-val').textContent = span.dataset.csForm || span.textContent;
+    // Always read from data attributes — textContent is unreliable in gloss mode
+    // because it includes the nested .cs-gloss-tip child text
+    var origVal = span.dataset.csOrig || '';
+    var formVal = span.dataset.csForm || '';
+    $id('csct-orig-val').textContent = origVal;
+    $id('csct-form-val').textContent = formVal;
     // Apply category colour to tooltip
     var cat    = span.dataset.csCat || 'Custom';
     var tip    = $id('cs-click-tip');
@@ -11597,9 +11617,9 @@ var _csTip = (function () {
       return;
     }
 
-    /* 2. click on a .pera-cs span — open tooltip (skip in gloss mode) */
+    /* 2. click on a .pera-cs span — open tooltip in both normal and gloss mode */
     var span = e.target.closest ? e.target.closest('.pera-cs') : null;
-    if (span && !span.classList.contains('cs-gloss')) {
+    if (span) {
       e.stopPropagation(); // prevent existing click handlers from also firing
       _open(span);
       return;
