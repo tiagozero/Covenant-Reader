@@ -1275,7 +1275,7 @@ nav {
   border-radius: 3px;
   padding: 1px 3px;
   margin: 0 1px;
-  cursor: pointer;
+  cursor: text;
   transition: background 0.15s;
   -webkit-box-decoration-break: clone;
   box-decoration-break: clone;
@@ -3321,7 +3321,7 @@ nav {
 <!-- Connected Speech word tooltip (click on amber form in reader) -->
 <div id="cs-click-tip">
   <div class="csct-head">
-    <span class="csct-badge">Connected Speech</span>
+    <span class="csct-badge" id="csct-badge-lbl">✎ Edit Connected Form</span>
     <button class="csct-x" id="csct-close">✕</button>
   </div>
   <div class="csct-body">
@@ -3504,7 +3504,7 @@ const kvSync = {
 // ════════════════════════════════════════════════════
 // SETTINGS STATE — declared early to avoid TDZ errors
 // ════════════════════════════════════════════════════
-let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false };
+let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false, masteryDoubleClick: false, masteryUnderline: false };
 
 // ════════════════════════════════════════════════════
 // HAMBURGER MENU
@@ -5135,7 +5135,11 @@ async function parseEpub(file) {
   // Helper: get plain-text length of a parsed doc
   function docTextLen(doc) {
     const body = doc?.querySelector('body') || doc?.documentElement;
-    return (body?.textContent || '').replace(/\s+/g, '').length;
+    if (!body) return 0;
+    // Clone so we don't mutate the cached doc; strip script/style before measuring
+    const clone = body.cloneNode(true);
+    clone.querySelectorAll('script, style, noscript').forEach(el => el.remove());
+    return (clone.textContent || '').replace(/\s+/g, '').length;
   }
 
   // ── 9. Parse chapters, merging stub files with their content sibling ──
@@ -5267,8 +5271,12 @@ function splitDocByAnchors(doc, tocEntries) {
   const fragmentTitles = {};
   entries.forEach(e => { fragmentTitles[e.fragment || ''] = e.title; });
 
-  // Get all elements with an id from the doc body
-  const body = doc.querySelector('body') || doc.documentElement;
+  // Work on a clean clone so script/style text doesn't bleed into textContent reads
+  const docClone = doc.cloneNode(true);
+  docClone.querySelectorAll('script, style, noscript, nav, aside').forEach(el => el.remove());
+
+  // Get all elements with an id from the cloned body
+  const body = docClone.querySelector('body') || docClone.documentElement;
   const allEls = [...body.querySelectorAll('*[id]')];
 
   // Collect the anchor IDs we care about (from TOC fragments), in DOM order
@@ -5277,7 +5285,7 @@ function splitDocByAnchors(doc, tocEntries) {
 
   if (!anchorEls.length) {
     // No anchors found in DOM — return whole file as first TOC entry
-    const { html } = extractDocContent(doc);
+    const { html } = extractDocContent(docClone);
     return [{ title: entries[0].title, html }];
   }
 
@@ -5372,11 +5380,31 @@ function findZipFile(zip, ...paths) {
     if (!p) continue;
     const clean = p.replace(/^\//, '');
     if (zip.file(clean)) return zip.file(clean);
+    // Try URL-decoded variant (zip stores "chapter 1.xhtml", href has "chapter%201.xhtml")
+    try {
+      const decoded = decodeURIComponent(clean);
+      if (decoded !== clean && zip.file(decoded)) return zip.file(decoded);
+    } catch(e) {}
+    // Try URL-encoded variant (zip stores "chapter%201.xhtml", href has "chapter 1.xhtml")
+    try {
+      const encoded = clean.split('/').map(s => encodeURIComponent(s)).join('/');
+      if (encoded !== clean && zip.file(encoded)) return zip.file(encoded);
+    } catch(e) {}
   }
+  // Last resort: match by filename only (handles path mismatches across EPUB structures)
   const name = (paths[0] || '').split('/').pop();
   if (!name) return null;
-  const match = Object.keys(zip.files).find(k => k === name || k.endsWith('/' + name));
-  return match ? zip.file(match) : null;
+  try {
+    const decodedName = decodeURIComponent(name);
+    const match = Object.keys(zip.files).find(k =>
+      k === name || k.endsWith('/' + name) ||
+      k === decodedName || k.endsWith('/' + decodedName)
+    );
+    return match ? zip.file(match) : null;
+  } catch(e) {
+    const match = Object.keys(zip.files).find(k => k === name || k.endsWith('/' + name));
+    return match ? zip.file(match) : null;
+  }
 }
 
 // Detect encoding from the first ~200 bytes of an XML/HTML file.
@@ -5473,9 +5501,14 @@ async function buildTocEntries(zip, opf, opfDir, manifest, parser) {
     if (!rawSrc || !label) return;
     const hashIdx  = rawSrc.indexOf('#');
     const filePart = hashIdx >= 0 ? rawSrc.slice(0, hashIdx) : rawSrc;
-    const fragment = hashIdx >= 0 ? rawSrc.slice(hashIdx + 1) : '';
+    // URL-decode fragment so it matches real DOM element IDs
+    // (Nav/NCX hrefs often contain percent-encoded IDs like "section%201")
+    const rawFrag = hashIdx >= 0 ? rawSrc.slice(hashIdx + 1) : '';
+    const fragment = rawFrag ? (() => { try { return decodeURIComponent(rawFrag); } catch(e) { return rawFrag; } })() : '';
     if (!filePart) return;
-    const resolved = resolveEpubPath(tocDir, filePart);
+    // URL-decode the file path too (e.g. "Text/chapter%201.xhtml" → "Text/chapter 1.xhtml")
+    const decodedFile = (() => { try { return decodeURIComponent(filePart); } catch(e) { return filePart; } })();
+    const resolved = resolveEpubPath(tocDir, decodedFile);
     const key = resolved + '#' + fragment;
     if (seen.has(key)) return;
     seen.add(key);
@@ -5497,6 +5530,7 @@ async function buildTocEntries(zip, opf, opfDir, manifest, parser) {
         const navEls = [...navDoc.querySelectorAll('nav')];
         const tocNav = navEls.find(n => /\btoc\b/i.test(n.getAttribute('epub:type') || ''))
                     || navEls.find(n => n.id === 'toc')
+                    || navEls.find(n => !/\b(landmarks|page-list|lot|loi)\b/i.test(n.getAttribute('epub:type') || ''))
                     || navEls[0];
         if (tocNav) {
           tocNav.querySelectorAll('a[href]').forEach(a => {
@@ -5538,9 +5572,13 @@ async function buildTocEntries(zip, opf, opfDir, manifest, parser) {
 const BLOCK_TAGS = new Set(['p','div','section','article','main','h1','h2','h3','h4','h5','h6','blockquote','pre','ul','ol','table','figure']);
 
 function extractDocContent(doc) {
+  // Work on a clone so the original cached doc is never mutated.
+  // This matters because the same doc object may be passed to extractDocContent
+  // multiple times (stub-merge + split flow) or to docTextLen after stripping.
+  const clone = doc.cloneNode(true);
   // Remove only truly non-content elements; keep figure/figcaption which may have visible text
-  ['script','style','nav','aside'].forEach(t => doc.querySelectorAll(t).forEach(el => el.remove()));
-  const body = doc.querySelector('body') || doc.documentElement;
+  ['script','style','nav','aside'].forEach(t => clone.querySelectorAll(t).forEach(el => el.remove()));
+  const body = clone.querySelector('body') || clone.documentElement;
   let headingTitle = '';
   const blocks = [];
 
@@ -6367,7 +6405,14 @@ function _applyHlStyle(span, col, lv) {
   const isLight = peraSettings.lightMode;
   if (lv === 5) {
     span.style.backgroundColor = 'transparent';
-    span.style.textDecoration = 'none';
+    if (peraSettings.masteryUnderline) {
+      span.style.textDecoration = 'underline';
+      span.style.textDecorationStyle = 'dotted';
+      span.style.textDecorationColor = 'rgba(74,222,128,0.45)';
+      span.style.textUnderlineOffset = '3px';
+    } else {
+      span.style.textDecoration = 'none';
+    }
     span.style.color = '';
   } else if (lv === 4) {
     span.style.backgroundColor = 'transparent';
@@ -6796,9 +6841,10 @@ function openSettingsOverlay() {
   document.getElementById('tog-ignored-csv')?.classList.toggle('on', peraSettings.ignoredCsv);
   document.getElementById('tog-hover-def')?.classList.toggle('on', peraSettings.hoverDefinition);
   document.getElementById('tog-ext-dict')?.classList.toggle('on', peraSettings.extDictEnabled);
+  document.getElementById('tog-mastery-dblclick')?.classList.toggle('on', peraSettings.masteryDoubleClick);
+  document.getElementById('tog-mastery-underline')?.classList.toggle('on', peraSettings.masteryUnderline);
   _updateExtDictSection();
   _updateIgnoredCsvSection();
-  // Render theme grid
   const themeGrid = document.getElementById('theme-grid');
   if (themeGrid) {
     themeGrid.innerHTML = '';
@@ -6948,6 +6994,28 @@ function openSettingsOverlay() {
       if (document.getElementById('reader-view')?.style.display === 'block') {
         if (peraSettings.connectedSpeech) csApplyHighlights(); else csRemoveHighlights();
       }
+    };
+  }
+  // Mastery double-click toggle
+  const togMasteryDblClick = document.getElementById('tog-mastery-dblclick');
+  if (togMasteryDblClick) {
+    togMasteryDblClick.classList.toggle('on', peraSettings.masteryDoubleClick);
+    togMasteryDblClick.onclick = () => {
+      peraSettings.masteryDoubleClick = !peraSettings.masteryDoubleClick;
+      togMasteryDblClick.classList.toggle('on', peraSettings.masteryDoubleClick);
+      settingsSave();
+    };
+  }
+  // Mastery underline toggle
+  const togMasteryUnderline = document.getElementById('tog-mastery-underline');
+  if (togMasteryUnderline) {
+    togMasteryUnderline.classList.toggle('on', peraSettings.masteryUnderline);
+    togMasteryUnderline.onclick = () => {
+      peraSettings.masteryUnderline = !peraSettings.masteryUnderline;
+      togMasteryUnderline.classList.toggle('on', peraSettings.masteryUnderline);
+      settingsSave();
+      // Re-apply highlights so underline state updates immediately
+      if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
     };
   }
   // Re-wire sliders (they may have been moved to overlay)
@@ -8699,6 +8767,8 @@ document.addEventListener('mouseover', e => {
   if (span) {
     // Suppress re-open if this span is the one being clicked to close
     if (_tsbClickSuppressSpan === span) return;
+    // Mastery double-click: don't show tooltip on hover for lv5 words
+    if (peraSettings.masteryDoubleClick && parseInt(span.dataset.lv, 10) >= 5) return;
     hlShowTip(span); return;
   }
   // Moved off highlight — hide if not moving onto tooltip or pill popup
@@ -8758,6 +8828,8 @@ document.addEventListener('mousemove', e => {
 });
 
 // ── Click mode ────────────────────────────────────
+let _masteryClickMap = new WeakMap(); // span → {count, timer}
+
 document.addEventListener('click', e => {
   if (!peraSettings.clickTooltip) {
     // Sidebar tooltip mode: clicking the active span closes the sidebar
@@ -8778,6 +8850,19 @@ document.addEventListener('click', e => {
   const span = e.target.closest?.('.pera-hl');
   if (span) {
     e.stopPropagation();
+    // Mastery double-click guard
+    const lv = parseInt(span.dataset.lv, 10) || 0;
+    if (peraSettings.masteryDoubleClick && lv >= 5) {
+      const entry = _masteryClickMap.get(span) || { count: 0, timer: null };
+      clearTimeout(entry.timer);
+      entry.count++;
+      if (entry.count < 2) {
+        entry.timer = setTimeout(() => { _masteryClickMap.delete(span); }, 500);
+        _masteryClickMap.set(span, entry);
+        return; // first click — wait for second
+      }
+      _masteryClickMap.delete(span); // second click — proceed to open
+    }
     if (_tipOpenSpan === span && _tip.classList.contains('tip-visible')) { _hideTip(true); return; }
     _tipPinned = false;
     hlShowTip(span);
@@ -11449,7 +11534,7 @@ var _csTip = (function () {
     var cat    = span.dataset.csCat || 'Custom';
     var tip    = $id('cs-click-tip');
     var badge  = tip ? tip.querySelector('.csct-badge') : null;
-    if (badge) badge.textContent = cat;
+    if (badge) badge.textContent = '✎ Edit — ' + cat;
     if (tip && typeof csCatColor === 'function' && typeof hexToRgb === 'function') {
       var hex = csCatColor(cat);
       var rgb = hexToRgb(hex);
@@ -11458,8 +11543,9 @@ var _csTip = (function () {
       tip.style.setProperty('--cst-bg-hover', 'rgba(' + rgb + ',0.22)');
       tip.style.setProperty('--cst-border',   'rgba(' + rgb + ',0.30)');
     }
-    _collapseEdit();
+    // Open directly in edit mode — clicking a CS word goes straight to editing
     _pos(span.getBoundingClientRect());
+    _openEdit();
   }
 
   function _openEdit() {
@@ -13984,6 +14070,25 @@ function refreshUwordsIfOpen() {
           </div>
           <div class="pera-tog" id="tog-cs-gloss"><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
         </div>
+      </div>
+    </div>
+
+    <!-- Mastery Words -->
+    <div class="sov-section">
+      <div class="sov-section-title">Mastery Words (Level 5)</div>
+      <div class="sov-row">
+        <div>
+          <div class="sov-row-label">Double-click to open tooltip</div>
+          <div class="sov-row-sub">Require two clicks to open the tooltip on Level 5 (mastered) words &mdash; keeps reading flow uninterrupted</div>
+        </div>
+        <div class="pera-tog" id="tog-mastery-dblclick"><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
+      </div>
+      <div class="sov-row" style="border-bottom:none;">
+        <div>
+          <div class="sov-row-label">Underline mastered words</div>
+          <div class="sov-row-sub">Show a subtle dotted underline under Level 5 words so they remain identifiable while reading</div>
+        </div>
+        <div class="pera-tog" id="tog-mastery-underline"><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
       </div>
     </div>
 
