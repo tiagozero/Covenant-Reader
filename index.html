@@ -7,7 +7,7 @@
   <link rel="icon" type="image/svg+xml" href="favicon/favicon-01-serif-c.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&family=DM+Mono&family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;600&family=Noto+Serif+SC:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,400&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&family=DM+Mono&family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;600&family=Noto+Serif+SC:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,400&family=Literata:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 /* ════════════ VARIABLES ════════════ */
@@ -1868,11 +1868,13 @@ nav {
 .vf-act { background:none;border:none;color:var(--muted);font-size:0.75rem;cursor:pointer;padding:2px 6px;border-radius:4px;transition:all 0.1s; }
 .vf-act:hover { background:var(--border);color:var(--text); }
 /* Flashcard */
-.vf-fc { perspective:900px;width:100%;max-width:480px;height:220px;cursor:pointer;margin:0 auto; }
-.vf-fc-in { position:relative;width:100%;height:100%;transition:transform 0.4s;transform-style:preserve-3d; }
-.vf-fc.flipped .vf-fc-in { transform:rotateY(180deg); }
-.vf-fc-f,.vf-fc-b { position:absolute;inset:0;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;-webkit-backface-visibility:hidden;backface-visibility:hidden;text-align:center; }
-.vf-fc-b { transform:rotateY(180deg); }
+.vf-fc { width:100%;max-width:480px;min-height:220px;cursor:pointer;margin:0 auto;position:relative; }
+.vf-fc-in { position:relative;width:100%;height:100%; }
+.vf-fc-f,.vf-fc-b { width:100%;background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;transition:opacity 0.18s ease; }
+.vf-fc-b { display:none; }
+.vf-fc.flipped .vf-fc-f { display:none; }
+.vf-fc.flipped .vf-fc-b { display:flex; }
+.vf-fc:hover .vf-fc-f { opacity:0.88; }
 /* Cards grid flip */
 .vf-grid-card { perspective:800px;cursor:pointer; }
 .vf-grid-inner { position:relative;width:100%;height:100%;transform-style:preserve-3d;transition:transform 0.4s; }
@@ -1907,7 +1909,7 @@ nav {
 
 /* ════════════ THEME PICKER ════════════ */
 .theme-grid {
-  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px;
   width: 100%;
 }
 .theme-swatch {
@@ -3102,6 +3104,31 @@ nav {
 <div class="toast" id="toast"></div>
   </div>
 </div>
+
+<!-- ════════════ LIBRARY TAG EDITOR MODAL ════════════ -->
+<div id="lib-tag-backdrop" style="display:none;position:fixed;inset:0;z-index:9998;background:rgba(0,0,0,0.45);" onclick="libCloseTagModal()"></div>
+<div id="lib-tag-modal" style="display:none;position:fixed;z-index:9999;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:0;width:min(400px,92vw);flex-direction:column;box-shadow:0 16px 48px rgba(0,0,0,0.5);">
+  <div style="padding:14px 18px 12px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;">
+    <div style="font-size:0.82rem;font-weight:700;color:var(--text);">Edit Tags</div>
+    <button onclick="libCloseTagModal()" style="background:none;border:1px solid var(--border);color:var(--muted);width:26px;height:26px;border-radius:6px;cursor:pointer;font-size:0.85rem;display:flex;align-items:center;justify-content:center;transition:all 0.12s;" onmouseover="this.style.borderColor='#555';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✕</button>
+  </div>
+  <div style="padding:14px 18px;">
+    <div style="font-size:0.62rem;color:var(--muted);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.07em;">Tags</div>
+    <div class="lib-tag-chips" id="lib-tag-chips" onclick="document.getElementById('lib-tag-chip-input').focus()">
+      <input class="lib-tag-chip-input" id="lib-tag-chip-input" placeholder="Add tag…" autocomplete="off" spellcheck="false">
+    </div>
+    <div style="font-size:0.62rem;color:var(--muted2);margin-top:6px;">Press Enter or comma to add · Backspace to remove last</div>
+    <div id="lib-tag-suggestions-wrap" style="display:none;margin-top:10px;">
+      <div style="font-size:0.6rem;color:var(--muted);margin-bottom:4px;text-transform:uppercase;letter-spacing:0.07em;">Suggestions</div>
+      <div id="lib-tag-suggestions"></div>
+    </div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button onclick="libSaveTags()" style="flex:1;padding:8px 0;background:var(--accent);color:white;border:none;border-radius:8px;font-size:0.75rem;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:opacity 0.15s;" onmouseover="this.style.opacity='0.85'" onmouseout="this.style.opacity='1'">Save Tags</button>
+      <button onclick="libCloseTagModal()" style="padding:8px 16px;background:none;border:1px solid var(--border);color:var(--muted);border-radius:8px;font-size:0.75rem;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='#555'" onmouseout="this.style.borderColor='var(--border)'">Cancel</button>
+    </div>
+  </div>
+</div>
+
 <div id="reader-view">
   <div class="reader-layout">
 
@@ -3782,9 +3809,9 @@ function openLevelInVocabForge(lv) {
   //        so we don't touch the live reader DOM.
   if (chapters.length) {
     // Build a word-lookup set for fast matching
-    const wordSet = new Map(); // lowercase word → true
+    const wordSet = new Map(); // lowercase word → original case
     csvSets.forEach(set => {
-      Object.keys(set.words).forEach(w => wordSet.set(w.toLowerCase(), true));
+      Object.keys(set.words).forEach(w => wordSet.set(w.toLowerCase(), w));
     });
     const tmp = document.createElement('div');
     chapters.forEach(ch => {
@@ -3792,25 +3819,25 @@ function openLevelInVocabForge(lv) {
       tmp.querySelectorAll('p.para, .para').forEach(paraEl => {
         const text = paraEl.textContent.trim();
         if (!text) return;
-        const sentence = text.slice(0, 220);
-        // Check each word in the paragraph against our word set
-        // Use simple word-boundary split for matching
         const tokens = text.toLowerCase().match(/[\p{L}\p{M}\p{N}_]+/gu) || [];
         const seen = new Set();
         tokens.forEach(token => {
           if (seen.has(token) || !wordSet.has(token)) return;
           seen.add(token);
+          const origWord = wordSet.get(token) || token;
+          const sentence = vfExtractSentence(text, origWord);
+          if (!sentence) return;
           if (!vfWordContexts.has(token)) vfWordContexts.set(token, []);
           const arr = vfWordContexts.get(token);
-          if (arr.length < 3 && !arr.includes(sentence)) arr.push(sentence);
+          const norm = sentence.toLowerCase().replace(/\s+/g,' ').trim();
+          const isDupe = arr.some(x => x.toLowerCase().replace(/\s+/g,' ').trim() === norm);
+          if (arr.length < 3 && !isDupe) arr.push(sentence);
         });
       });
     });
     vfContextSave();
   }
 
-  // ── 2. Build vfCards with ONLY words at the requested level ─────────
-  // We do NOT use vfFilter_cur for level selection — we directly populate
   // vfCards with only the requested words so no filtering logic can fail.
   const prog = vfLoadProgress();
   const seenWords = new Set();
@@ -3924,6 +3951,10 @@ const FONTS = [
   { id:'playfair',    name:'Playfair',     stack:"'Playfair Display','Noto Serif JP','Noto Serif SC','Noto Serif KR',serif",          previewCJK:'あ', previewLat:'Aa' },
   { id:'merriweather',name:'Merriweather', stack:"Merriweather,'Noto Serif JP','Noto Serif SC','Noto Serif KR',serif",                previewCJK:'あ', previewLat:'Aa' },
   { id:'ibm-plex',    name:'IBM Plex',     stack:"'IBM Plex Serif','Noto Serif JP','Noto Serif SC','Noto Serif KR',serif",            previewCJK:'あ', previewLat:'Aa' },
+  { id:'literata',    name:'Literata',     stack:"Literata,'Noto Serif JP','Noto Serif SC','Noto Serif KR',serif",                    previewCJK:'あ', previewLat:'Aa' },
+  { id:'crimson',     name:'Crimson',      stack:"'Crimson Pro','Noto Serif JP','Noto Serif SC','Noto Serif KR',serif",               previewCJK:'あ', previewLat:'Aa' },
+  { id:'baskerville', name:'Baskerville',  stack:"'Libre Baskerville','Noto Serif JP','Noto Serif SC','Noto Serif KR',serif",         previewCJK:'あ', previewLat:'Aa' },
+  { id:'spectral',    name:'Spectral',     stack:"Spectral,'Noto Serif JP','Noto Serif SC','Noto Serif KR',serif",                    previewCJK:'あ', previewLat:'Aa' },
 ];
 
 // ════════════════════════════════════════════════════
@@ -6457,6 +6488,11 @@ function applyHighlights() {
   document.documentElement.style.removeProperty('--badge-fade-color');
   document.querySelectorAll('.pera-hl').forEach(s => s.classList.remove('badge-active'));
 
+  // Clear stale context sentences so this chapter's words get fresh sentences.
+  // Sentences are re-collected below as each highlighted span is walked.
+  // Do NOT clear vfWordOccurrences — it accumulates across chapters intentionally.
+  vfWordContexts.clear();
+
   // Ensure csvSets word levels are always in sync with persisted progress.
   // This guards against the race where applyHighlights runs before the startup
   // progress-sync IIFE, or after a CSV is added/removed while a book is open.
@@ -6525,15 +6561,16 @@ function applyHighlights() {
           if (lv < 5) {
             const paraEl = node.parentElement?.closest?.('.para') || node.parentElement;
             if (paraEl) {
-              const sentence = paraEl.textContent.trim().slice(0, 220);
+              const paraText = paraEl.textContent.trim();
+              const wk = (h.origWord || h.word).toLowerCase();
+              const sentence = vfExtractSentence(paraText, h.origWord || h.word);
               if (sentence) {
-                const wk = (h.origWord || h.word).toLowerCase();
-                // Track total occurrence count
                 vfWordOccurrences.set(wk, (vfWordOccurrences.get(wk) || 0) + 1);
-                // Only collect up to 3 unique sentences; skip if word appears too often (>8)
                 if (!vfWordContexts.has(wk)) vfWordContexts.set(wk, []);
                 const arr = vfWordContexts.get(wk);
-                if (arr.length < 3 && !arr.includes(sentence)) arr.push(sentence);
+                const norm = sentence.toLowerCase().replace(/\s+/g,' ').trim();
+                const isDupe = arr.some(x => x.toLowerCase().replace(/\s+/g,' ').trim() === norm);
+                if (arr.length < 3 && !isDupe) arr.push(sentence);
               }
             }
           }
@@ -6627,6 +6664,40 @@ const THEMES = {
     text:'#c8d6f0', muted:'#3a4f7a', muted2:'#4e6694',
     accent:'#7b9ef0', accentDim:'rgba(123,158,240,0.1)',
     para:'#a8bde0',
+  },
+  // ── 2 New Light Themes ──────────────────────────────
+  ivoryPress: {
+    name: 'Ivory', light: true,
+    bg:'#f9f6f0', surface:'#f1ece2', surface2:'#e8e1d5',
+    border:'#ddd5c5', border2:'#cfc5b0',
+    text:'#2c2118', muted:'#9a8770', muted2:'#7a6a52',
+    accent:'#b05a2f', accentDim:'rgba(176,90,47,0.10)',
+    para:'#2c2118',
+  },
+  softSage: {
+    name: 'Sage', light: true,
+    bg:'#f4f6f2', surface:'#eaede6', surface2:'#dfe3d9',
+    border:'#cdd4c6', border2:'#bec7b6',
+    text:'#1e2b1e', muted:'#7a8f76', muted2:'#607560',
+    accent:'#3d7a4a', accentDim:'rgba(61,122,74,0.10)',
+    para:'#1e2b1e',
+  },
+  // ── 2 New Dark Themes ───────────────────────────────
+  obsidian: {
+    name: 'Obsidian', light: false,
+    bg:'#13141a', surface:'#1a1c24', surface2:'#21242f',
+    border:'#2c3040', border2:'#373c50',
+    text:'#d4d8e8', muted:'#505870', muted2:'#6a738a',
+    accent:'#c97beb', accentDim:'rgba(201,123,235,0.10)',
+    para:'#bcc2d8',
+  },
+  deepAmber: {
+    name: 'Amber', light: false,
+    bg:'#0f0c08', surface:'#181410', surface2:'#201a14',
+    border:'#2e2618', border2:'#3d3320',
+    text:'#e8d8b8', muted:'#5a4c34', muted2:'#7a6848',
+    accent:'#d4924a', accentDim:'rgba(212,146,74,0.10)',
+    para:'#d8c8a0',
   },
 };
 
@@ -8626,6 +8697,8 @@ function hlToast(msg) {
   t.style.opacity = '1'; t.style.transform = 'translateX(-50%) translateY(0)';
   clearTimeout(t._t); t._t = setTimeout(() => { t.style.opacity = '0'; t.style.transform = 'translateX(-50%) translateY(8px)'; }, 1800);
 }
+// General-purpose toast used by library/tag functions
+function toast(msg) { hlToast(msg); }
 
 // ── Keyboard shortcuts while tooltip is open ──────
 document.addEventListener('keydown', e => {
@@ -9153,7 +9226,7 @@ function badgeSendBookToVf() {
   if (chapters.length) {
     const wordSet = new Map();
     csvSets.forEach(set => {
-      Object.keys(set.words).forEach(w => wordSet.set(w.toLowerCase(), true));
+      Object.keys(set.words).forEach(w => wordSet.set(w.toLowerCase(), w));
     });
     const tmp = document.createElement('div');
     chapters.forEach(ch => {
@@ -9161,22 +9234,25 @@ function badgeSendBookToVf() {
       tmp.querySelectorAll('p.para, .para').forEach(paraEl => {
         const text = paraEl.textContent.trim();
         if (!text) return;
-        const sentence = text.slice(0, 220);
         const tokens = text.toLowerCase().match(/[\p{L}\p{M}\p{N}_]+/gu) || [];
         const seen = new Set();
         tokens.forEach(token => {
           if (seen.has(token) || !wordSet.has(token)) return;
           seen.add(token);
+          const origWord = wordSet.get(token) || token;
+          const sentence = vfExtractSentence(text, origWord);
+          if (!sentence) return;
           if (!vfWordContexts.has(token)) vfWordContexts.set(token, []);
           const arr = vfWordContexts.get(token);
-          if (arr.length < 3 && !arr.includes(sentence)) arr.push(sentence);
+          const norm = sentence.toLowerCase().replace(/\s+/g,' ').trim();
+          const isDupe = arr.some(x => x.toLowerCase().replace(/\s+/g,' ').trim() === norm);
+          if (arr.length < 3 && !isDupe) arr.push(sentence);
         });
       });
     });
     vfContextSave();
   }
 
-  const prog = vfLoadProgress();
   const all = [];
 
   // Iterate the exact same word set the badge displays — guaranteed identical count
@@ -9275,6 +9351,54 @@ function vfContextLoad() {
       Object.entries(obj).forEach(([k, v]) => { if (Array.isArray(v)) vfWordContexts.set(k, v); });
     }
   } catch(e) {}
+}
+
+// Extract the sentence(s) containing `word` from a paragraph string.
+// Cleans epub artifacts (soft-hyphens, line-break hyphens, etc.) before splitting.
+// Returns the best single sentence as a string, or '' if not found.
+function vfExtractSentence(paraText, word) {
+  if (!paraText || !word) return '';
+
+  // ── 1. Clean epub artifacts ──────────────────────────────────────────
+  let text = paraText
+    .replace(/\u00AD/g, '')           // soft hyphen (invisible, breaks regex)
+    .replace(/-\s*\n\s*/g, '')        // hyphenated line-break → join word
+    .replace(/\s+/g, ' ')            // collapse all whitespace
+    .trim();
+
+  if (!text) return '';
+
+  // ── 2. Split into sentences ──────────────────────────────────────────
+  // Strategy: split after . ! ? followed by a space+capital or end-of-string.
+  // Also split on — and ; when they precede a capital letter (dialogue etc).
+  // We keep the delimiter attached to the preceding sentence.
+  const raw = text.match(/[^.!?]+(?:[.!?]+(?=\s+[A-Z"'«""]|$)|[.!?]+$|(?=[^.!?]*$))/g);
+  const sentences = (raw && raw.length > 1 ? raw : [text]).map(s => s.trim()).filter(Boolean);
+
+  // ── 3. Find ALL sentences containing the word ───────────────────────
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  // Word-boundary aware: won't match "mended" inside "commended"
+  const re = new RegExp('(?<![\\w\u00C0-\u024F\u0027])' + escaped + '(?![\\w\u00C0-\u024F\u0027])', 'i');
+
+  const matching = sentences.filter(s => re.test(s));
+
+  if (matching.length) {
+    // Pick the shortest matching sentence (most focused context)
+    const best = matching.sort((a, b) => a.length - b.length)[0].trim();
+    return best.length > 600 ? best.slice(0, 597) + '…' : best;
+  }
+
+  // ── 4. Fallback: window around the word ─────────────────────────────
+  const lower = text.toLowerCase();
+  const wLower = word.toLowerCase();
+  const idx = lower.search(new RegExp('(?<![\\w\u00C0-\u024F\u0027])' + escaped.toLowerCase() + '(?![\\w\u00C0-\u024F\u0027])'));
+  if (idx >= 0) {
+    const start = Math.max(0, idx - 100);
+    const end   = Math.min(text.length, idx + word.length + 300);
+    return (start > 0 ? '…' : '') + text.slice(start, end).trim() + (end < text.length ? '…' : '');
+  }
+
+  return '';  // word genuinely not in this paragraph — caller should skip
 }
 
 // ── Lightweight LZ-based compression for IDB KV store ─────────────────
@@ -9615,8 +9739,9 @@ function vfRenderCards() {
     if (contexts.length) {
       const ctxId = 'ctx-' + card.word.replace(/[^a-z0-9]/gi,'_');
       const highlight = (s) => {
-        const re = new RegExp('(' + card.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
-        return esc(s).replace(re, '<strong style="color:var(--text);background:rgba(255,200,0,0.15);border-radius:2px;padding:0 1px;">$1</strong>');
+        const escaped = card.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+        const re = new RegExp('(?<![\\w\u0027])(' + escaped + ')(?![\\w\u0027])', 'gi');
+        return esc(s).replace(re, '<strong style="color:var(--text);background:rgba(255,200,0,0.22);border-radius:2px;padding:0 1px;font-style:normal;">$1</strong>');
       };
       ctxHtml = `<div style="margin-top:7px;padding-top:7px;border-top:1px solid var(--border);">
           <div id="${ctxId}" style="font-size:0.76rem;color:var(--muted2);line-height:1.55;font-style:italic;max-height:54px;overflow:hidden;" data-idx="0" data-max="${contexts.length}">
@@ -9756,8 +9881,9 @@ function vfCtxNav(id, dir) {
     ctxs = vfWordContexts.get(word.toLowerCase()) || [];
   }
   if (!ctxs[idx]) return;
-  const re = new RegExp('(' + word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
-  el.innerHTML = '"' + esc(ctxs[idx]).replace(re, '<strong style="color:var(--text);background:rgba(255,200,0,0.15);border-radius:2px;padding:0 1px;">$1</strong>') + '"';
+  const escaped = word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+  const re = new RegExp('(?<![\\w\u0027])(' + escaped + ')(?![\\w\u0027])', 'gi');
+  el.innerHTML = '"' + esc(ctxs[idx]).replace(re, '<strong style="color:var(--text);background:rgba(255,200,0,0.22);border-radius:2px;padding:0 1px;font-style:normal;">$1</strong>') + '"';
   const nav = document.getElementById(id + '-n');
   if (nav) nav.textContent = (idx + 1) + ' / ' + max;
 }
@@ -9777,7 +9903,9 @@ function vfCardLevel(word, delta) {
 
 // ── Flashcard ──────────────────────────────────────
 function vfStartFlashcard(words) {
-  vfFcCards = [...(words || vfGetFiltered())].sort(() => Math.random() - 0.5);
+  // Clone each card so level/status mutations during the session don't
+  // affect the shared vfCards array (which would corrupt the card grid display)
+  vfFcCards = [...(words || vfGetFiltered())].map(c => ({ ...c })).sort(() => Math.random() - 0.5);
   vfFcIdx = 0;
   vfShowFc();
 }
@@ -9801,8 +9929,10 @@ function vfShowFc() {
   let fcCtxHtml = '';
   if (fcCtxs.length) {
     const hlWord = (s) => {
-      const re = new RegExp('(' + c.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&') + ')', 'gi');
-      return esc(s).replace(re, '<strong style="color:var(--text);background:rgba(255,200,0,0.15);border-radius:2px;padding:0 2px;">$1</strong>');
+      // Word-boundary aware highlight — won't match the word inside longer words
+      const escaped = c.word.replace(/[.*+?^${}()|[\]\\]/g,'\\$&');
+      const re = new RegExp('(?<![\\w\u0027])(' + escaped + ')(?![\\w\u0027])', 'gi');
+      return esc(s).replace(re, '<strong style="color:var(--text);background:rgba(255,200,0,0.22);border-radius:2px;padding:0 2px;font-style:normal;">$1</strong>');
     };
     fcCtxHtml = `
       <div style="margin-top:12px;padding-top:10px;border-top:1px solid var(--border);width:100%;text-align:left;">
@@ -9818,7 +9948,7 @@ function vfShowFc() {
   }
   area.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;padding:24px 16px;gap:16px;">
     ${vfProgBar(pct, vfFcIdx, vfFcCards.length)}
-    <div class="vf-fc" id="vf-fc" onclick="this.classList.toggle('flipped')" style="cursor:pointer;${fcCtxHtml ? 'height:280px;' : ''}">
+    <div class="vf-fc" id="vf-fc" onclick="this.classList.toggle('flipped')" style="cursor:pointer;">
       <div class="vf-fc-in">
         <div class="vf-fc-f">
           <div style="font-family:'Instrument Serif',serif;font-size:2.2rem;font-weight:700;letter-spacing:-0.01em;">${esc(c.word)}</div>
@@ -9857,18 +9987,21 @@ function vfFcRate(delta) {
 // ── Quiz ───────────────────────────────────────────
 function vfStartQuiz(words) {
   const pool = (words || vfGetFiltered()).map(c => {
-    // Hydrate def from csvSets if the card's def is empty
-    if (!c.def) {
+    // Always clone the card so mutations (level changes) during the quiz
+    // never affect the original vfCards objects — which would make every
+    // card in the grid show the same mutated state after one answer.
+    const cloned = { ...c };
+    if (!cloned.def) {
       let found = '';
       csvSets.forEach(set => {
         if (!found) {
-          const e = set.words[c.word] || set.words[c.word.toLowerCase()];
+          const e = set.words[cloned.word] || set.words[cloned.word.toLowerCase()];
           if (e && e.def) found = e.def;
         }
       });
-      if (found) return { ...c, def: found };
+      if (found) cloned.def = found;
     }
-    return c;
+    return cloned;
   }).filter(c => c.def);
   vfQuizCards = [...pool].sort(() => Math.random() - 0.5);
   vfQuizIdx = 0; vfQuizScore = 0;
@@ -9924,17 +10057,19 @@ function vfCheckQuiz() {
 // ── Multiple Choice ────────────────────────────────
 function vfStartMC(words) {
   const pool = (words || vfGetFiltered()).map(c => {
-    if (!c.def) {
+    // Clone so mutations during the session don't affect shared vfCards objects
+    const cloned = { ...c };
+    if (!cloned.def) {
       let found = '';
       csvSets.forEach(set => {
         if (!found) {
-          const e = set.words[c.word] || set.words[c.word.toLowerCase()];
+          const e = set.words[cloned.word] || set.words[cloned.word.toLowerCase()];
           if (e && e.def) found = e.def;
         }
       });
-      if (found) return { ...c, def: found };
+      if (found) cloned.def = found;
     }
-    return c;
+    return cloned;
   }).filter(c => c.def);
   vfMcCards = [...pool].sort(() => Math.random() - 0.5);
   vfMcIdx = 0; vfMcScore = 0;
