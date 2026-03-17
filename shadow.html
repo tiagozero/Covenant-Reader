@@ -4,6 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>◈ Shadow</title>
+<link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='7' fill='%234F46E5'/%3E%3Cg fill='none' stroke='%23ffffff' stroke-width='1.8' stroke-linejoin='round'%3E%3Crect x='10' y='10' width='12' height='12' rx='1' transform='rotate(45 16 16)'/%3E%3Crect x='12.5' y='12.5' width='7' height='7' rx='.5' transform='rotate(45 16 16)'/%3E%3C/g%3E%3C/svg%3E">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=Lora:ital,wght@0,400;0,500;0,600;1,400&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
@@ -161,7 +162,11 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
 .hint{padding:20px 12px;text-align:center;font-size:12px;color:var(--tx3);line-height:1.65}
 
 /* DEFAULT RULE STYLES */
-.chip{display:inline-flex;align-items:center;padding:0 5px;border-radius:4px;font-family:'Lora',serif;font-size:.95em;font-weight:400;font-style:italic;cursor:default;margin:0 4px;vertical-align:baseline;position:relative;top:-1px;background:#EAE8E1;color:#52525B;border:1px solid #D4D4D8;}
+.chip{display:inline-flex;align-items:center;padding:0 5px;border-radius:4px;font-family:'Lora',serif;font-size:.95em;font-weight:400;font-style:italic;cursor:pointer;margin:0 4px;vertical-align:baseline;position:relative;top:-1px;background:#EAE8E1;color:#52525B;border:1px solid #D4D4D8;transition:filter .12s;}
+.chip:hover{filter:brightness(.92);}
+.chip::before{content:attr(data-orig);position:absolute;bottom:calc(100% + 7px);left:50%;transform:translateX(-50%);background:#18181B;color:#fff;font-family:'DM Sans',sans-serif;font-size:11px;font-style:normal;font-weight:500;padding:3px 8px;border-radius:5px;white-space:nowrap;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200;}
+.chip::after{content:'';position:absolute;bottom:calc(100% + 1px);left:50%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#18181B;border-bottom:none;pointer-events:none;opacity:0;transition:opacity .15s;z-index:200;}
+.chip:hover::before,.chip:hover::after{opacity:1;}
 .rule-badge{display:inline-flex;align-items:center;font-size:9px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:2px 6px;border-radius:3px;margin-top:4px;background:#EAE8E1;color:#52525B;border:1px solid #D4D4D8;}
 
 /* CENTER */
@@ -340,6 +345,7 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
               <option value="alpha">A → Z</option>
             </select>
             <button class="btn pri" onclick="openAddRuleDialog()">+ Add Rule</button>
+            <button class="btn" onclick="clearAllRules()" style="color:var(--red);border-color:var(--red);background:var(--red-l);" title="Remove all rules permanently">🗑 Clear All</button>
           </div>
 
           <!-- Stats + page size -->
@@ -405,6 +411,18 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
                 <input type="file" accept=".json" style="display:none" onchange="importRules(this.files[0])">
               </label>
             </div>
+
+            <div style="border-top:1px solid var(--border);margin-top:16px;padding-top:16px;">
+              <div class="st-h" style="font-size:13px;margin-bottom:6px;">Import from CSV</div>
+              <p style="font-size:11px;color:var(--tx3);margin-bottom:10px;line-height:1.55;">
+                3 columns: <strong>Original</strong>, <strong>Connected Form</strong>, <strong>Type</strong>.<br>
+                Missing types are created automatically.
+              </p>
+              <label class="btn" style="margin:0;width:100%;justify-content:center;cursor:pointer;">
+                📄 Upload CSV
+                <input type="file" accept=".csv,.txt" style="display:none" onchange="importCSV(this.files[0]);this.value=''">
+              </label>
+            </div>
           </div>
         </div>
 
@@ -419,6 +437,8 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
           <tr><td><kbd>Space</kbd></td><td>Play / Pause</td></tr>
           <tr><td><kbd>← →</kbd></td><td>Previous / Next sentence</td></tr>
           <tr><td><kbd>L</kbd></td><td>Toggle loop sentence</td></tr>
+          <tr><td><kbd>P</kbd></td><td>Repeat line once</td></tr>
+          <tr><td><kbd>U</kbd></td><td>Toggle auto-pause at line end</td></tr>
           <tr><td><kbd>R</kbd></td><td>Start / stop recording</td></tr>
           <tr><td><kbd>S</kbd></td><td>Toggle Shadow Mode</td></tr>
           <tr><td><kbd>M</kbd></td><td>Toggle multi-select</td></tr>
@@ -549,7 +569,9 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
         <button class="p-chip" id="chip-spd" onclick="cycleSpeed()">1×</button>
         <button class="p-chip" id="chip-ab" onclick="toggleAB()">A-B</button>
         <button class="p-chip" onclick="toggleABPanel()" title="Show saved A-B markers">⊟ Markers</button>
-        <button class="p-chip" id="chip-loop" onclick="toggleLoopSent()">🔂 Loop</button>
+        <button class="p-chip" id="chip-loop" onclick="toggleLoopSent()" title="Loop sentence (L)">🔂 Loop</button>
+        <button class="p-chip" id="chip-repeat" onclick="toggleRepeatLine()" title="Repeat line once (P) — replays the current sentence once then stops">↩ Repeat</button>
+        <button class="p-chip" id="chip-autopause" onclick="toggleAutoPause()" title="Auto-pause at end of line (U) — pauses when the sentence ends">⏸ Auto-pause</button>
       </div>
     </div>
     
@@ -679,6 +701,27 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
   </div>
 </div>
 
+<!-- Edit Rule Dialog -->
+<div class="bd" id="m-edit-rule">
+  <div class="modal" style="width:380px;">
+    <div class="modal-h">Edit Rule</div>
+    <div class="fg">
+      <label class="fl">Original Text</label>
+      <div id="er-orig-display" style="padding:8px 10px;background:var(--s2);border:1px solid var(--border);border-radius:6px;font-size:13px;font-weight:600;color:var(--tx);"></div>
+    </div>
+    <div class="fg"><label class="fl">Connected Form</label><input id="er-phon" class="fi" placeholder="e.g. wanna"></div>
+    <div class="fg"><label class="fl">Type</label><select id="er-type" class="fs"></select></div>
+    <div class="fg" style="margin-bottom:0"><label class="fl">Note <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label><input id="er-note" class="fi" placeholder="Short explanation…"></div>
+    <div class="modal-ft" style="justify-content:space-between;">
+      <button class="btn" style="color:var(--red);border-color:var(--red);" onclick="deleteRuleFromEdit()">Delete Rule</button>
+      <div style="display:flex;gap:7px;">
+        <button class="btn" onclick="closeM('m-edit-rule')">Cancel</button>
+        <button class="btn pri" onclick="saveEditRuleDialog()">Save Changes</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Upload modal -->
 <div class="bd" id="m-upload">
   <div class="modal modal-lg">
@@ -802,33 +845,40 @@ function parseSubFile(raw,filename){
 // ═══════════════════════════════════════════
 const DB=(()=>{
   let _db=null;
+  const VERSION=2;
   const init=()=>new Promise((resolve,reject)=>{
-    const r=indexedDB.open('shadow_v5', 1);
+    const r=indexedDB.open('shadow_v5', VERSION);
     r.onupgradeneeded=e=>{
-      const db = e.target.result;
+      const db=e.target.result;
       if(!db.objectStoreNames.contains('lessons')){
         db.createObjectStore('lessons',{keyPath:'id',autoIncrement:true});
+      }
+      if(!db.objectStoreNames.contains('settings')){
+        db.createObjectStore('settings',{keyPath:'key'});
       }
     };
     r.onsuccess=e=>{
       _db=e.target.result;
-      _db.onversionchange = () => { _db.close(); _db=null; };
+      _db.onversionchange=()=>{_db.close();_db=null;};
       resolve();
     };
-    r.onerror=e=>{ reject(e.target.error); };
-    r.onblocked=e=>{ reject('blocked'); };
+    r.onerror=e=>{reject(e.target.error)};
+    r.onblocked=e=>{reject('blocked')};
   });
-  const tx=rw=>{
-    if(!_db) throw new Error("DB not initialized.");
-    return _db.transaction('lessons',rw).objectStore('lessons');
+  const tx=(store,rw)=>{
+    if(!_db)throw new Error("DB not initialized.");
+    return _db.transaction(store,rw).objectStore(store);
   };
   const w=r=>new Promise((ok,fail)=>{r.onsuccess=()=>ok(r.result);r.onerror=()=>fail(r.error)});
   return{
     init,
-    save:l=>w(l.id?tx('readwrite').put(l):tx('readwrite').add(l)),
-    all:()=>w(tx('readonly').getAll()),
-    get:id=>w(tx('readonly').get(id)),
-    del:id=>w(tx('readwrite').delete(id))
+    save:l=>w(l.id?tx('lessons','readwrite').put(l):tx('lessons','readwrite').add(l)),
+    all:()=>w(tx('lessons','readonly').getAll()),
+    get:id=>w(tx('lessons','readonly').get(id)),
+    del:id=>w(tx('lessons','readwrite').delete(id)),
+    // settings store: key/value
+    setSetting:(key,value)=>w(tx('settings','readwrite').put({key,value})),
+    getSetting:key=>w(tx('settings','readonly').get(key)).then(r=>r?.value??null),
   };
 })();
 
@@ -1000,16 +1050,20 @@ const S={
 
   trimMode:'full',trimS:0,trimE:null,
   upAV:null,upSRT:null,upIsVid:false,
+
+  // Repeat & Auto-pause
+  repeatLine:false,   // replay current sentence on end (separate from loopSent which is infinite)
+  autoPause:false,    // pause automatically at end of current sentence
 };
 
-let ruleTypes = JSON.parse(localStorage.getItem('shadow_ruletypes')) || [
+let ruleTypes = [
   { id: 'linking', name: 'Linking', color: '#4F46E5' },
   { id: 'reduction', name: 'Reduction', color: '#6D28D9' },
   { id: 'assimilation', name: 'Assimilation', color: '#059669' },
   { id: 'elision', name: 'Elision', color: '#D97706' }
 ];
-let globalRules = JSON.parse(localStorage.getItem('shadow_global_rules')) || [];
-let hlColors = localStorage.getItem('shadow_hlcolors') !== 'false';
+let globalRules = [];
+let hlColors = true;
 
 const audEl=$('main-aud'),vidEl=$('main-vid');
 let wfMain=null;
@@ -1096,8 +1150,15 @@ async function renderLibrary(){
 // ═══════════════════════════════════════════
 //  RULE TYPES & GLOBALS
 // ═══════════════════════════════════════════
-function saveGlobalRules(){localStorage.setItem('shadow_global_rules',JSON.stringify(globalRules))}
-function saveRuleTypes(){localStorage.setItem('shadow_ruletypes',JSON.stringify(ruleTypes));injectRuleStyles();updRuleTypeSelect()}
+async function saveGlobalRules(){
+  try{ await DB.setSetting('globalRules', globalRules); }
+  catch(e){ console.error('saveGlobalRules IDB error',e); }
+}
+async function saveRuleTypes(){
+  try{ await DB.setSetting('ruleTypes', ruleTypes); }
+  catch(e){ console.error('saveRuleTypes IDB error',e); }
+  injectRuleStyles();updRuleTypeSelect();
+}
 
 function injectRuleStyles(){
   const styleEl=document.getElementById('dynamic-rule-styles')||document.createElement('style');
@@ -1142,7 +1203,7 @@ function delRuleType(id){
   ruleTypes=ruleTypes.filter(r=>r.id!==id);saveRuleTypes();updRuleTypesList();renderAllRules();updRulesSidebar();
   if($('player-view').style.display!=='none')updStage();
 }
-function toggleColorize(val){hlColors=val;localStorage.setItem('shadow_hlcolors',hlColors);injectRuleStyles()}
+function toggleColorize(val){hlColors=val;DB.setSetting('hlColors',hlColors);injectRuleStyles()}
 
 let rulesPage = 0;
 let rulesPerPage = 20;
@@ -1216,7 +1277,8 @@ function renderAllRules(){
         </span>
       </td>
       <td style="padding:9px 14px;font-size:12px;color:var(--tx3);max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">${r.note?esc(r.note):'—'}</td>
-      <td style="padding:9px 8px;text-align:center;">
+      <td style="padding:9px 8px;text-align:right;white-space:nowrap;">
+        <button class="rule-del" style="position:static;color:var(--pri);" onclick="openEditRule('${r.id}')" title="Edit">✎</button>
         <button class="rule-del" style="position:static;" onclick="deleteGlobalRule('${r.id}')" title="Delete">✕</button>
       </td>
     </tr>`;
@@ -1283,6 +1345,41 @@ function saveAddRuleDialog(){
   if($('player-view').style.display!=='none') updStage();
 }
 
+let _editRuleId=null;
+
+function openEditRule(id){
+  const r=globalRules.find(x=>x.id===id);if(!r)return;
+  _editRuleId=id;
+  // Populate type select
+  const sel=$('er-type');
+  sel.innerHTML=ruleTypes.map(rt=>`<option value="${rt.id}"${rt.id===r.type?' selected':''}>${esc(rt.name)}</option>`).join('');
+  $('er-orig-display').textContent=r.orig;
+  $('er-phon').value=r.phon;
+  $('er-note').value=r.note||'';
+  openM('m-edit-rule');
+  setTimeout(()=>$('er-phon').focus(),80);
+}
+
+function saveEditRuleDialog(){
+  if(!_editRuleId)return;
+  const phon=$('er-phon').value.trim(),type=$('er-type').value,note=$('er-note').value.trim();
+  if(!phon){alert('Connected Form cannot be empty.');return}
+  const idx=globalRules.findIndex(r=>r.id===_editRuleId);
+  if(idx>=0) globalRules[idx]={...globalRules[idx],phon,type,note};
+  saveGlobalRules();closeM('m-edit-rule');_editRuleId=null;
+  renderAllRules();updRulesSidebar();
+  if($('player-view').style.display!=='none') updStage();
+}
+
+function deleteRuleFromEdit(){
+  if(!_editRuleId)return;
+  if(!confirm('Delete this rule?'))return;
+  globalRules=globalRules.filter(r=>r.id!==_editRuleId);
+  saveGlobalRules();closeM('m-edit-rule');_editRuleId=null;
+  rulesPage=0;renderAllRules();updRulesSidebar();
+  if($('player-view').style.display!=='none') updStage();
+}
+
 function updRulesSidebar(){
   const p=$('rules-container');if(!p)return;
   const q=$('sb-rule-search')?$('sb-rule-search').value.toLowerCase().trim():'';
@@ -1304,6 +1401,13 @@ function deleteGlobalRule(id){
   if($('player-view').style.display!=='none')updStage();
 }
 
+function clearAllRules(){
+  if(!globalRules.length){alert('No rules to remove.');return}
+  if(!confirm(`Remove all ${globalRules.length.toLocaleString()} rules permanently? This cannot be undone.\n\nTip: Export a backup first.`))return;
+  globalRules=[];saveGlobalRules();rulesPage=0;renderAllRules();updRulesSidebar();
+  if($('player-view').style.display!=='none')updStage();
+}
+
 function exportRules(){
   const data=JSON.stringify({globalRules,ruleTypes,hlColors},null,2);
   const a=document.createElement('a');a.href='data:application/json,'+encodeURIComponent(data);a.download='shadow-backup.json';a.click();
@@ -1311,16 +1415,114 @@ function exportRules(){
 function importRules(file){
   if(!file)return;
   const r=new FileReader();
-  r.onload=e=>{
+  r.onload=async e=>{
     try{
       const d=JSON.parse(e.target.result);
-      if(d.globalRules){globalRules=d.globalRules;saveGlobalRules()}
-      if(d.ruleTypes){ruleTypes=d.ruleTypes;saveRuleTypes()}
-      if(typeof d.hlColors!=='undefined'){hlColors=d.hlColors;localStorage.setItem('shadow_hlcolors',hlColors)}
+      if(d.globalRules){globalRules=d.globalRules;await saveGlobalRules()}
+      if(d.ruleTypes){ruleTypes=d.ruleTypes;await saveRuleTypes()}
+      if(typeof d.hlColors!=='undefined'){hlColors=d.hlColors;await DB.setSetting('hlColors',hlColors)}
       injectRuleStyles();updRuleTypeSelect();updRuleTypeFilter();rulesPage=0;renderAllRules();updRuleTypesList();
       alert('Import successful!');
     }catch(err){alert('Invalid backup file.')}
   };r.readAsText(file);
+}
+
+function importCSV(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    const text=e.target.result;
+
+    // Parse CSV respecting quoted fields
+    function parseCSVLine(line){
+      const fields=[];let cur='';let inQ=false;
+      for(let i=0;i<line.length;i++){
+        const ch=line[i];
+        if(ch==='"'){
+          if(inQ&&line[i+1]==='"'){cur+='"';i++;}  // escaped quote
+          else inQ=!inQ;
+        } else if((ch===','||ch===';')&&!inQ){
+          fields.push(cur.trim());cur='';
+        } else cur+=ch;
+      }
+      fields.push(cur.trim());
+      return fields;
+    }
+
+    const lines=text.split(/\r?\n/).filter(l=>l.trim());
+    if(!lines.length){alert('CSV file is empty.');return}
+
+    // Detect if first row is a header (doesn't look like rule data)
+    let startIdx=0;
+    const firstFields=parseCSVLine(lines[0]);
+    if(firstFields.length>=2){
+      const maybeHeader=firstFields[0].toLowerCase();
+      if(['original','word','orig','source','from','text'].includes(maybeHeader)) startIdx=1;
+    }
+
+    // Palette for auto-created types
+    const autoPalette=['#4F46E5','#6D28D9','#059669','#D97706','#DC2626','#0891B2','#7C3AED','#B45309','#047857','#9333EA'];
+    let paletteIdx=ruleTypes.length % autoPalette.length;
+
+    let added=0, updated=0, skipped=0, newTypes=0;
+    const errors=[];
+
+    for(let li=startIdx;li<lines.length;li++){
+      const row=parseCSVLine(lines[li]);
+      const orig=(row[0]||'').trim();
+      const phon=(row[1]||'').trim();
+      const typeRaw=(row[2]||'').trim();
+      const note=(row[3]||'').trim(); // optional 4th column
+
+      if(!orig||!phon){
+        if(orig||phon) errors.push(`Row ${li+1}: missing original or connected form`);
+        skipped++;continue;
+      }
+
+      // Resolve or create the rule type
+      let typeId='';
+      if(typeRaw){
+        // Try exact id match first, then name match (case-insensitive)
+        let rt=ruleTypes.find(r=>r.id===typeRaw.toLowerCase().replace(/[^a-z0-9]/g,'-'))
+               ||ruleTypes.find(r=>r.name.toLowerCase()===typeRaw.toLowerCase());
+        if(!rt){
+          // Auto-create the type
+          const newId=typeRaw.toLowerCase().replace(/[^a-z0-9]/g,'-').replace(/-+/g,'-').replace(/^-|-$/g,'');
+          const color=autoPalette[paletteIdx%autoPalette.length];paletteIdx++;
+          rt={id:newId,name:typeRaw,color};
+          ruleTypes.push(rt);newTypes++;
+        }
+        typeId=rt.id;
+      } else if(ruleTypes.length>0){
+        typeId=ruleTypes[0].id; // default to first type
+      }
+
+      // Add or update
+      const existing=globalRules.findIndex(r=>r.orig.toLowerCase()===orig.toLowerCase());
+      if(existing>=0){
+        globalRules[existing]={...globalRules[existing],phon,type:typeId,note:note||globalRules[existing].note};
+        updated++;
+      } else {
+        globalRules.push({id:uid(),orig,phon,type:typeId,note,createdAt:Date.now()});
+        added++;
+      }
+    }
+
+    // Persist everything
+    saveGlobalRules();
+    saveRuleTypes(); // always save — ensures new types and any existing ones are persisted
+    injectRuleStyles();updRuleTypeSelect();updRuleTypeFilter();updRuleTypesList();
+    rulesPage=0;renderAllRules();updRulesSidebar();
+    if($('player-view').style.display!=='none') updStage();
+
+    // Summary
+    let msg=`✅ CSV imported successfully!\n\n• ${added} rule${added!==1?'s':''} added\n• ${updated} rule${updated!==1?'s':''} updated`;
+    if(skipped>0) msg+=`\n• ${skipped} row${skipped!==1?'s':''} skipped (empty)`;
+    if(newTypes>0) msg+=`\n• ${newTypes} new rule type${newTypes!==1?'s':''} created`;
+    if(errors.length) msg+=`\n\nWarnings:\n`+errors.slice(0,5).join('\n')+(errors.length>5?`\n…and ${errors.length-5} more`:'');
+    alert(msg);
+  };
+  reader.readAsText(file);
 }
 
 // ═══════════════════════════════════════════
@@ -1367,6 +1569,21 @@ function startRAF(){
       if(S.loopSent){
         const s=S.subs[S.curIdx];
         if(s&&t>=s.end){seekTo(s.start);t=mEl().currentTime}
+      }else if(S.repeatLine){
+        const s=S.subs[S.curIdx];
+        if(s&&t>=s.end){
+          // Play once more then stop repeating
+          S.repeatLine=false;
+          $('chip-repeat')?.classList.remove('on');
+          seekTo(s.start);t=mEl().currentTime;
+          // keep playing — it will play through once more naturally
+        }
+      }else if(S.autoPause){
+        const s=S.subs[S.curIdx];
+        if(s&&t>=s.end){
+          pause();
+          seekTo(s.start); // reset to start of sentence for easy replay
+        }
       }else if(S.loopSel&&S.sel.size>0){
         const sorted=[...S.sel].sort((a,b)=>a-b);
         if(S.loopSelIdx>=sorted.length)S.loopSelIdx=0;
@@ -1453,6 +1670,17 @@ function toggleLoopSent(){
   S.loopSent=!S.loopSent;
   $('ib-loop').classList.toggle('on',S.loopSent);
   $('chip-loop').classList.toggle('on',S.loopSent);
+}
+
+function toggleRepeatLine(){
+  S.repeatLine=!S.repeatLine;
+  $('chip-repeat')?.classList.toggle('on',S.repeatLine);
+  // Mutually exclusive with loop (loop is infinite, repeat plays once more then stops)
+}
+
+function toggleAutoPause(){
+  S.autoPause=!S.autoPause;
+  $('chip-autopause')?.classList.toggle('on',S.autoPause);
 }
 // ═══════════════════════════════════════════
 //  MULTI A-B MARKERS  (saved per lesson in DB)
@@ -1570,8 +1798,11 @@ async function loadLesson(lesson){
   S.curIdx=0;S.sel=new Set();S.loopSel=false;
   S.trimMode=lesson.trimMode||'full';S.trimS=lesson.trimStart||0;S.trimE=lesson.trimEnd??null;
   S.abOn=false;S.abA=S.abB=null;S.abPhase=0;S.abActiveId=null;
+  S.repeatLine=false;S.autoPause=false;
   S.lesson.abMarkers=lesson.abMarkers||[];
   $('chip-ab').textContent='A-B';$('chip-ab').classList.remove('on');
+  $('chip-repeat')?.classList.remove('on');
+  $('chip-autopause')?.classList.remove('on');
   if(lesson.recordingData&&!lesson.recordings){
     lesson.recordings=[{id:uid(),name:"Legacy Recording",data:lesson.recordingData,type:lesson.recordingType,sents:[],text:"",createdAt:Date.now()}];
     delete lesson.recordingData;delete lesson.recordingType;
@@ -1676,7 +1907,7 @@ function renderTextWithRules(text){
   let res='';let cur=0;
   for(const m of validMatches){
     res+=esc(text.substring(cur,m.start));
-    res+=`<span class="chip ${esc(m.rule.type)}" title="${esc(getRuleTypeName(m.rule.type))+(m.rule.note?': '+m.rule.note:'')}">${esc(m.rule.phon)}</span>`;
+    res+=`<span class="chip ${esc(m.rule.type)}" data-orig="${esc(m.rule.orig)}" onclick="openEditRule('${m.rule.id}')" title="${esc(getRuleTypeName(m.rule.type))+(m.rule.note?': '+m.rule.note:'')}">${esc(m.rule.phon)}</span>`;
     cur=m.end;
   }
   res+=esc(text.substring(cur));
@@ -2628,6 +2859,8 @@ document.addEventListener('keydown',e=>{
   if(e.code==='ArrowRight'){e.preventDefault();nextSent()}
   if(e.code==='ArrowLeft'){e.preventDefault();prevSent()}
   if(e.key==='l'||e.key==='L')toggleLoopSent();
+  if(e.key==='p'||e.key==='P')toggleRepeatLine();
+  if(e.key==='u'||e.key==='U')toggleAutoPause();
   if(e.key==='r'||e.key==='R'){
     if($('m-rec').style.display==='block') toggleRec();
     else openRecModal();
@@ -2643,7 +2876,40 @@ document.addEventListener('keydown',e=>{
 async function init(){
   applyDarkPref();
   applyCountdownSetting();
-  try{await DB.init()}catch(e){console.error("Initialization error:",e)}
+  try{ await DB.init(); } catch(e){ console.error("Initialization error:",e); }
+
+  // Load rules & settings from IDB
+  try{
+    // Migrate from localStorage if IDB has no data yet
+    const [idbRules, idbTypes, idbHl] = await Promise.all([
+      DB.getSetting('globalRules'),
+      DB.getSetting('ruleTypes'),
+      DB.getSetting('hlColors'),
+    ]);
+
+    if(idbRules !== null){
+      globalRules = idbRules;
+    } else {
+      // One-time migration from localStorage
+      const lsRules = localStorage.getItem('shadow_global_rules');
+      if(lsRules){ try{ globalRules=JSON.parse(lsRules); await saveGlobalRules(); localStorage.removeItem('shadow_global_rules'); }catch(e){} }
+    }
+
+    if(idbTypes !== null){
+      ruleTypes = idbTypes;
+    } else {
+      const lsTypes = localStorage.getItem('shadow_ruletypes');
+      if(lsTypes){ try{ ruleTypes=JSON.parse(lsTypes); await saveRuleTypes(); localStorage.removeItem('shadow_ruletypes'); }catch(e){} }
+    }
+
+    if(idbHl !== null){
+      hlColors = idbHl;
+    } else {
+      const lsHl = localStorage.getItem('shadow_hlcolors');
+      if(lsHl !== null){ hlColors = lsHl !== 'false'; await DB.setSetting('hlColors', hlColors); localStorage.removeItem('shadow_hlcolors'); }
+    }
+  } catch(e){ console.error("Error loading settings from IDB:", e); }
+
   injectRuleStyles();updRuleTypeSelect();
   initWF();setupMedia();
   setupDrop('av-zone',onAVFile);
