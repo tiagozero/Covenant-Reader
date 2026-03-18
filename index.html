@@ -3468,6 +3468,7 @@ function _kvOpen() {
     };
     req.onsuccess = e => { _kvDb = e.target.result; _kvDb.onversionchange = () => { _kvDb.close(); _kvDb = null; }; resolve(_kvDb); };
     req.onerror   = e => reject(e.target.error);
+    req.onblocked = () => { if (_kvDb) { _kvDb.close(); _kvDb = null; } };
   });
 }
 
@@ -3585,7 +3586,9 @@ function openDB() {
     };
     req.onerror = e => reject(e.target.error);
     // If blocked by a stale connection, reload to get a clean slate (handles VS Code Live Server hot-reloads).
-    req.onblocked = () => { window.location.reload(); };
+    // Do NOT reload on blocked — on GitHub Pages this causes an infinite reload loop.
+    // Instead, close any stale connection so the pending open can proceed.
+    req.onblocked = () => { if (db) { db.close(); db = null; } };
   });
 }
 
@@ -6525,7 +6528,9 @@ function applyHighlights() {
     }
   }
 
-  if (!csvSets.length) return;
+  // Must highlight mined words even when no CSV sets are loaded
+  const _minedEntries = mvMineLoad();
+  if (!csvSets.length && !_minedEntries.length) return;
   _buildHlTrie();
   // Accumulate occurrence counts across chapters (don't clear — needed for Hide Common filter)
 
