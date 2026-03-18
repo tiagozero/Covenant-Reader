@@ -1894,7 +1894,14 @@ function renderTextWithRules(text){
     const loOrig=r.orig.toLowerCase();let pos=0;
     while(true){
       const idx=lowerText.indexOf(loOrig,pos);if(idx===-1)break;
-      matches.push({start:idx,end:idx+loOrig.length,rule:r});pos=idx+1;
+      const end=idx+loOrig.length;
+      // Word boundary check: char before must not be a word char, char after must not be a word char
+      const before=idx>0?lowerText[idx-1]:'';
+      const after=end<lowerText.length?lowerText[end]:'';
+      const wordBefore=before&&/\w/.test(before);
+      const wordAfter=after&&/\w/.test(after);
+      if(!wordBefore&&!wordAfter){matches.push({start:idx,end,rule:r});}
+      pos=idx+1;
     }
   }
   matches.sort((a,b)=>{const la=a.end-a.start,lb=b.end-b.start;return la!==lb?lb-la:a.start-b.start});
