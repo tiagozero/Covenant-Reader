@@ -3610,7 +3610,7 @@ const kvSync = {
 // ════════════════════════════════════════════════════
 // SETTINGS STATE — declared early to avoid TDZ errors
 // ════════════════════════════════════════════════════
-let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false, masteryDoubleClick: false, masteryUnderline: false, scrollMode: 'continuous' };
+let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false, masteryDoubleClick: false, masteryUnderline: false, scrollMode: 'page' };
 
 // ════════════════════════════════════════════════════
 // HAMBURGER MENU
@@ -5831,6 +5831,14 @@ function loadChapter(idx) {
     `\n<div id="chapter-complete-bar" class="chapter-complete-bar">
       <button class="chapter-complete-btn" onclick="showSessionStats()">✓ Chapter Completed</button>
     </div>`;
+  // FIX: if page-turn mode is active, hide chapter-content immediately after
+  // writing innerHTML so the user never sees a flash of continuous-scroll text.
+  // Previously chapter-content was visible until applyScrollMode() ran inside
+  // the deferred setTimeout, causing a visible flicker + freeze.
+  if (peraSettings.scrollMode === 'page') {
+    document.getElementById('chapter-content').style.display = 'none';
+    document.getElementById('reader-main')?.classList.add('page-turn-mode');
+  }
   document.getElementById('topbar-title').innerHTML = `<strong>${esc(ch.title)}</strong>`;
   document.querySelectorAll('.chapter-item').forEach((el, i) => el.classList.toggle('active', i === idx));
   requestAnimationFrame(() => {
@@ -7313,7 +7321,7 @@ function openSettingsOverlay() {
   document.getElementById('tog-mastery-dblclick')?.classList.toggle('on', peraSettings.masteryDoubleClick);
   document.getElementById('tog-mastery-underline')?.classList.toggle('on', peraSettings.masteryUnderline);
   const smSel = document.getElementById('scroll-mode-select');
-  if (smSel) smSel.value = peraSettings.scrollMode || 'continuous';
+  if (smSel) smSel.value = peraSettings.scrollMode || 'page';
   _updateExtDictSection();
   _updateIgnoredCsvSection();
   const themeGrid = document.getElementById('theme-grid');
