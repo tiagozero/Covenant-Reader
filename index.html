@@ -372,11 +372,16 @@ nav {
 .chapter-complete-btn:hover { opacity: 0.88; transform: translateY(-2px); box-shadow: 0 8px 28px rgba(var(--accent-rgb), 0.45); }
 .chapter-complete-btn:active { transform: translateY(0); }
 .reader-main .icon-btn, .reader-main button { cursor: pointer !important; }
-.chapter-content.badge-filtering .para { color: var(--badge-fade-color, rgba(200,200,200,0.15)) !important; }
+.chapter-content.badge-filtering .para,
+#page-turn-content.badge-filtering .para { color: var(--badge-fade-color, rgba(200,200,200,0.15)) !important; }
 .chapter-content.badge-filtering .chapter-heading,
-.chapter-content.badge-filtering .inner-heading { color: var(--badge-fade-color, rgba(200,200,200,0.15)) !important; }
-.chapter-content.badge-filtering .pera-hl { opacity: 0.08 !important; }
-.chapter-content.badge-filtering .pera-hl.badge-active { opacity: 1 !important; }
+.chapter-content.badge-filtering .inner-heading,
+#page-turn-content.badge-filtering .chapter-heading,
+#page-turn-content.badge-filtering .inner-heading { color: var(--badge-fade-color, rgba(200,200,200,0.15)) !important; }
+.chapter-content.badge-filtering .pera-hl,
+#page-turn-content.badge-filtering .pera-hl { opacity: 0.08 !important; }
+.chapter-content.badge-filtering .pera-hl.badge-active,
+#page-turn-content.badge-filtering .pera-hl.badge-active { opacity: 1 !important; }
 .chapter-heading { font-family: var(--reader-font); font-size: calc(var(--reader-size) * 1.4); font-weight: 600; line-height: 1.3; letter-spacing: -0.01em; margin-bottom: 28px; color: var(--text); padding-bottom: 16px; border-bottom: 1px solid var(--border); }
 .inner-heading { font-family: var(--reader-font); font-size: calc(var(--reader-size) * 1.15); font-weight: 600; color: var(--text); margin: 28px 0 10px; line-height: 1.4; }
 .para { font-size: var(--reader-size); line-height: var(--reader-line); margin-bottom: 18px; color: var(--para-color, #c8c8c8); font-family: var(--reader-font); word-break: break-word; overflow-wrap: break-word; line-break: normal; text-align: var(--reader-align, left); cursor: default !important; }
@@ -2402,31 +2407,7 @@ nav {
   font-size: 0.62rem; color: var(--muted); line-height: 1.5;
 }
 
-/* ════════════ READING RULER ════════════ */
-#reading-ruler {
-  position: fixed;
-  left: 0; right: 0;
-  height: 2px;
-  pointer-events: none;
-  z-index: 9000;
-  transition: opacity 0.15s;
-  opacity: 0;
-}
-#reading-ruler::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--accent);
-  opacity: 0.55;
-}
-#reading-ruler::after {
-  content: '';
-  position: absolute;
-  top: 2px; left: 0; right: 0;
-  height: 60px;
-  background: linear-gradient(to bottom, rgba(var(--accent-rgb,232,54,93),0.07), transparent);
-}
-body.ruler-active #reading-ruler { opacity: 1; }
+
 
 /* ════════════ PAGE-TURN SCROLL MODE ════════════ */
 /* ── Page-turn scroll mode ── */
@@ -3629,7 +3610,7 @@ const kvSync = {
 // ════════════════════════════════════════════════════
 // SETTINGS STATE — declared early to avoid TDZ errors
 // ════════════════════════════════════════════════════
-let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false, masteryDoubleClick: false, masteryUnderline: false, readingRuler: false, scrollMode: 'continuous' };
+let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false, masteryDoubleClick: false, masteryUnderline: false, scrollMode: 'continuous' };
 
 // ════════════════════════════════════════════════════
 // HAMBURGER MENU
@@ -5851,7 +5832,7 @@ function loadChapter(idx) {
   requestAnimationFrame(() => {
     document.querySelector(".chapter-item.active")?.scrollIntoView({ block: "nearest" });
     if (csvSets.length) applyHighlights();
-    else if (peraSettings.csActive) setTimeout(csApplyHighlights, 50);
+    else if (peraSettings.csActive) csApplyHighlights();
     refreshUwordsIfOpen();
     _hlpRefreshAfterChapterLoad();
     // Build page-turn pages AFTER highlights are applied so spans are in the HTML
@@ -6579,6 +6560,7 @@ function applyHighlights() {
   // Clear badge focus filter when highlights rebuild
   _badgeFocusLevel = 0;
   content.classList.remove('badge-filtering');
+  document.getElementById('page-turn-content')?.classList.remove('badge-filtering');
   document.documentElement.style.removeProperty('--badge-fade-color');
   document.querySelectorAll('.pera-hl').forEach(s => s.classList.remove('badge-active'));
 
@@ -6694,8 +6676,9 @@ function applyHighlights() {
   refreshUwordsIfOpen();
   // Refresh highlights panel + apply hidden state
   _hlpRefreshAfterChapterLoad();
-  // Re-apply Connected Speech highlights if active
-  if (peraSettings.csActive) setTimeout(csApplyHighlights, 10);
+  // Re-apply Connected Speech highlights if active — must run synchronously
+  // before applyScrollMode/ptBuild reads #chapter-content HTML
+  if (peraSettings.csActive) csApplyHighlights();
   // Re-apply note indicators (blue dots on noted words)
   if (typeof _applyAllNoteIndicators === 'function') setTimeout(_applyAllNoteIndicators, 50);
 }
@@ -6711,22 +6694,21 @@ function settingsSave() {
   try { kvSync.setItem(PERA_SETTINGS_KEY, JSON.stringify(peraSettings)); } catch(e) {}
 }
 
-// ════════════════════════════════════════════════════
-// READING RULER
-// ════════════════════════════════════════════════════
-(function() {
-  const ruler = document.getElementById('reading-ruler');
-  if (!ruler) return;
-  document.addEventListener('mousemove', function(e) {
-    if (!peraSettings.readingRuler) return;
-    ruler.style.top = e.clientY + 'px';
-  });
-})();
+// Returns the active reader text container.
+// In page-turn mode: #page-turn-content. Otherwise: #chapter-content.
+// All functions reading/modifying reader spans must use this.
+function _readerContent() {
+  if (peraSettings.scrollMode === 'page') {
+    const pt = document.getElementById('page-turn-content');
+    if (pt) return pt;
+  }
+  return document.getElementById('chapter-content');
+}
 
 // ════════════════════════════════════════════════════
 // PAGE-TURN SCROLL MODE
 // ════════════════════════════════════════════════════
-let _ptPages = [], _ptPage = 0;
+let _ptPages = [], _ptPage = 0, _ptRestorePage = -1;
 
 function ptBuild() {
   const cc = document.getElementById('chapter-content');
@@ -6841,7 +6823,14 @@ function ptBuild() {
   closePara();
   if (pageHTML.trim()) _ptPages.push(pageHTML);
 
-  _ptPage = 0;
+  // Restore previous page position if this is a mid-session rebuild (CS toggle),
+  // otherwise start at page 0 (fresh chapter load)
+  if (_ptRestorePage >= 0) {
+    _ptPage = Math.min(_ptRestorePage, _ptPages.length - 1);
+    _ptRestorePage = -1;
+  } else {
+    _ptPage = 0;
+  }
   ptRender();
 }
 
@@ -7276,7 +7265,6 @@ function openSettingsOverlay() {
   document.getElementById('tog-ext-dict')?.classList.toggle('on', peraSettings.extDictEnabled);
   document.getElementById('tog-mastery-dblclick')?.classList.toggle('on', peraSettings.masteryDoubleClick);
   document.getElementById('tog-mastery-underline')?.classList.toggle('on', peraSettings.masteryUnderline);
-  document.getElementById('tog-reading-ruler')?.classList.toggle('on', peraSettings.readingRuler);
   const smSel = document.getElementById('scroll-mode-select');
   if (smSel) smSel.value = peraSettings.scrollMode || 'continuous';
   _updateExtDictSection();
@@ -7806,7 +7794,7 @@ function tipSidebarShow(span, set, entry, lv, wordKey) {
   // ── Step 2: always supplement with a live DOM scan (catches words where
   //    the stored sentence was truncated before the word appeared, or where
   //    vfWordContexts hasn't been populated yet for this word).
-  var chContent = document.getElementById('chapter-content');
+  var chContent = _readerContent() || document.getElementById('chapter-content');
   if (chContent && sentences.length < 3) {
     var paras = Array.from(chContent.querySelectorAll('.para, p'));
     paras.forEach(function(p) {
@@ -8895,7 +8883,7 @@ function showSessionStats() {
   const hasNext = currentChap < chapters.length - 1;
 
   // ── Gather chapter vocab stats ──────────────────────────────
-  const hlSpans    = document.querySelectorAll('#chapter-content .pera-hl');
+  const hlSpans    = (document.getElementById('chapter-content') || document.createElement('div')).querySelectorAll('.pera-hl');
   const prog       = vfLoadProgress();
   const LV_NAMES   = ['','L1','L2','L3','L4','L5'];
   const LV_COLORS_LIGHT = ['#b91c1c','#b45309','#a16207','#15803d','#15803d'];
@@ -9273,9 +9261,8 @@ document.addEventListener('mousemove', e => {
 // immediately show the right cursor without needing a full highlight rebuild.
 function connSyncClickMode() {
   const cursor = peraSettings.clickTooltip ? 'pointer' : '';
-  document.querySelectorAll('#chapter-content .pera-hl').forEach(s => {
-    s.style.cursor = cursor;
-  });
+  const rc = _readerContent();
+  if (rc) rc.querySelectorAll('.pera-hl').forEach(s => { s.style.cursor = cursor; });
 }
 
 // ── Click mode ────────────────────────────────────
@@ -9337,20 +9324,23 @@ function renderBadge() {
   const spans = Array.from(content.querySelectorAll('.pera-hl'));
   if (!spans.length) { removeBadge(); return; }
 
-  // Deduplicate by word key — skip mined spans
+  // Build word map using live progress — same source badgeSendToVf uses
+  const prog = vfLoadProgress();
   const seen = new Map();
   spans.forEach(s => {
     const w = s.dataset.word;
     if (!w || seen.has(w)) return;
-    if (s.dataset.si === MINED_SI) return; // mined phrases don't count toward badge
+    if (s.dataset.si === MINED_SI) return;
     const si  = parseInt(s.dataset.si, 10);
     const set = !isNaN(si) && csvSets[si] ? csvSets[si] : null;
     const ent = set ? (set.words[s.dataset.origWord] || set.words[w] || {}) : {};
-    seen.set(w, { level: parseInt(s.dataset.lv, 10) || 1, ph: ent.ph||'', def: ent.def||'', si });
+    // Use live prog level — same as badgeSendToVf does on line: prog[w]?.level ?? data.level
+    const liveLevel = prog[w]?.level ?? (parseInt(s.dataset.lv, 10) || 1);
+    seen.set(w, { level: liveLevel, ph: ent.ph||'', def: ent.def||'', si });
   });
   _badgeWordMap = seen;
 
-  // Level counts (index = level 1-5)
+  // Level counts from live levels
   const counts = [0,0,0,0,0,0];
   seen.forEach(({level:lv}) => { counts[Math.min(5, Math.max(1, lv))]++; });
   const total    = seen.size;
@@ -9475,7 +9465,6 @@ function renderBadge() {
 
   // Book stats — compute mastered count fresh from current progress so it never goes stale
   if (_bookStats) {
-    const prog = vfLoadProgress();
     let bookMastered = 0;
     _bookStats.vocabWords.forEach(w => {
       if ((prog[w]?.level ?? 1) >= 5) bookMastered++;
@@ -9520,7 +9509,7 @@ function renderBadge() {
 }
 
 function badgeApplyFilter() {
-  const content = document.getElementById('chapter-content');
+  const content = _readerContent();
   if (!content) return;
   if (_badgeFocusLevel === 0) {
     // Clear — remove filter class and all active markers
@@ -10838,7 +10827,7 @@ function _injectNoteUI(container, wordKey, onSave) {
 
 // Update .has-note class on all reader spans matching a word key
 function _updateNoteSpanIndicators(wordKey, hasNote) {
-  const content = document.getElementById('chapter-content');
+  const content = _readerContent();
   if (!content) return;
   const wk = wordKey.toLowerCase();
   content.querySelectorAll('.pera-hl').forEach(s => {
@@ -10849,7 +10838,7 @@ function _updateNoteSpanIndicators(wordKey, hasNote) {
 
 // Apply all saved note indicators to reader spans (call after chapter loads)
 function _applyAllNoteIndicators() {
-  const content = document.getElementById('chapter-content');
+  const content = _readerContent();
   if (!content) return;
   const notes = _notesLoad();
   content.querySelectorAll('.pera-hl').forEach(s => {
@@ -11769,7 +11758,10 @@ function csRuleDismiss() {
 var _csMatchCounts = {};
 
 function csApplyHighlights() {
-  var content = document.getElementById("chapter-content");
+  // Always operate on #chapter-content — it is the source ptBuild reads from.
+  // After applying, if page-turn mode is active we must rebuild pages so the
+  // CS spans appear in #page-turn-content.
+  var content = document.getElementById('chapter-content');
   if (!content) return;
   csRemoveHighlights();
   _csMatchCounts = {}; // reset counters before each pass
@@ -11980,9 +11972,16 @@ function csApplyHighlights() {
   } else {
     processBlock(content);
   }
+  // If page-turn mode is active and pages already exist (CS toggled mid-session),
+  // rebuild so the new CS spans appear in the rendered pages
+  if (peraSettings.scrollMode === 'page' && _ptPages.length) {
+    _ptRestorePage = _ptPage;
+    _ptWaitAndBuild(0);
+  }
 }
 
 function csRemoveHighlights() {
+  // Always operate on #chapter-content (source), then rebuild pages if needed
   const content = document.getElementById('chapter-content');
   if (!content) return;
   content.querySelectorAll('.pera-cs').forEach(span => {
@@ -11992,6 +11991,11 @@ function csRemoveHighlights() {
   });
   content.normalize();
   csClickTipClose(); // close tooltip whenever highlights are removed
+  // Rebuild pages without CS spans
+  if (peraSettings.scrollMode === 'page') {
+    _ptRestorePage = _ptPage;
+    _ptWaitAndBuild(0);
+  }
 }
 
 // ══════════════════════════════════════════════════════════
@@ -13786,7 +13790,7 @@ function _hlpCollect() {
   const LV_COLORS = ['','#f87171','#fb923c','#facc15','#4ade80','#4ade80'];
   const LV_BG     = ['','rgba(248,113,113,0.12)','rgba(251,146,60,0.12)','rgba(250,204,21,0.12)','rgba(74,222,128,0.12)','rgba(74,222,128,0.12)'];
 
-  const spans = document.querySelectorAll('#chapter-content .pera-hl');
+  const spans = (_readerContent() || document.createElement('div')).querySelectorAll('.pera-hl');
   const seen  = new Map(); // wordKey → {word, lv, si, color, bg, count}
   spans.forEach(s => {
     if (s.dataset.si === '-1') return; // skip mined
@@ -14002,7 +14006,7 @@ function hlpToggleHide(key, btn) {
 // Apply hidden state to reader spans — hidden words get opacity:0 style on the span
 function _hlpApplyHiddenToReader() {
   const hidden = _hlpHiddenLoad();
-  document.querySelectorAll('#chapter-content .pera-hl').forEach(s => {
+  (_readerContent() || document.createElement('div')).querySelectorAll('.pera-hl').forEach(s => {
     const key = s.dataset.word || '';
     if (hidden.has(key)) {
       s.style.opacity    = '0.18';
@@ -14030,7 +14034,7 @@ function hlpOpenGridTab() {
   const hidden    = _hlpHiddenLoad();
 
   // Build word data from reader spans
-  const spans = document.querySelectorAll('#chapter-content .pera-hl');
+  const spans = (_readerContent() || document.createElement('div')).querySelectorAll('.pera-hl');
   const seen  = new Map();
   spans.forEach(s => {
     if (s.dataset.si === '-1') return;
@@ -14298,7 +14302,7 @@ window.addEventListener('message', function(e) {
     _hlpApplyHiddenToReader();
   } else {
     // level actions
-    const spans = document.querySelectorAll('#chapter-content .pera-hl[data-word="' + CSS.escape(key) + '"]');
+    const spans = (_readerContent() || document.createElement('div')).querySelectorAll('.pera-hl[data-word="' + CSS.escape(key) + '"]');
     if (!spans.length) return;
     const s = spans[0];
     const si = parseInt(s.dataset.si, 10);
@@ -14364,8 +14368,6 @@ function refreshUwordsIfOpen() {
   if (peraSettings.readerWidth) { currentWidth = peraSettings.readerWidth; }
   if (peraSettings.readerAlign) { currentAlign = peraSettings.readerAlign; }
   applyTypography();
-  // Restore reading ruler
-  if (peraSettings.readingRuler) document.body.classList.add('ruler-active');
   await csvLoad();
   renderCsvChips();
   vfContextLoad(); // restore context sentences from previous sessions
@@ -14386,8 +14388,6 @@ function refreshUwordsIfOpen() {
 })();
 </script>
 
-<!-- ════════════ READING RULER ════════════ -->
-<div id="reading-ruler"></div>
 
 <!-- ════════════ HOVER DEFINITION TOOLTIP ════════════ -->
 <div id="hover-def-tip">
@@ -14564,18 +14564,6 @@ function refreshUwordsIfOpen() {
           <div class="sov-row-sub">Upload a CSV of words to suppress from highlighting and Unique Words</div>
         </div>
         <div class="pera-tog" id="tog-ignored-csv"><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
-      </div>
-      <div class="sov-row">
-        <div>
-          <div class="sov-row-label">Reading Ruler</div>
-          <div class="sov-row-sub">Highlights a guide line that follows your cursor to help track your place on the page</div>
-        </div>
-        <div class="pera-tog" id="tog-reading-ruler" onclick="
-          peraSettings.readingRuler = !peraSettings.readingRuler;
-          this.classList.toggle('on', peraSettings.readingRuler);
-          document.body.classList.toggle('ruler-active', peraSettings.readingRuler);
-          settingsSave();
-        "><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
       </div>
       <div class="sov-row">
         <div>
