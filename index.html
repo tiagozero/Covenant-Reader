@@ -7,7 +7,27 @@
   <link rel="icon" type="image/svg+xml" href="favicon/favicon-01-serif-c.svg">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&family=DM+Mono&family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;600&family=Noto+Serif+SC:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,400&family=Literata:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap" rel="stylesheet">
+<!-- Critical UI fonts only — loaded immediately -->
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=DM+Sans:wght@300;400;500;600&family=Syne:wght@700;800&family=DM+Mono&display=swap" rel="stylesheet">
+<script>
+/* Lazy-load reader fonts after page is interactive — avoids blocking Brave's font shield on startup */
+(function() {
+  var _readerFontsLoaded = false;
+  function loadReaderFonts() {
+    if (_readerFontsLoaded) return;
+    _readerFontsLoaded = true;
+    var link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://fonts.googleapis.com/css2?family=Noto+Serif+JP:wght@300;400;500&family=Noto+Sans+JP:wght@300;400;500&family=Lora:ital,wght@0,400;0,500;1,400&family=Source+Sans+3:wght@300;400;600&family=Noto+Serif+SC:wght@300;400&family=Noto+Sans+SC:wght@300;400&family=Noto+Serif+KR:wght@300;400&family=Noto+Sans+KR:wght@300;400&family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Merriweather:ital,wght@0,300;0,400;1,300&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,400&family=Literata:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Crimson+Pro:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Libre+Baskerville:ital,wght@0,400;0,700;1,400&family=Spectral:ital,wght@0,300;0,400;0,500;1,300;1,400&display=swap';
+    document.head.appendChild(link);
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', loadReaderFonts);
+  } else {
+    loadReaderFonts();
+  }
+})();
+</script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
 <style>
 /* ════════════ VARIABLES ════════════ */
@@ -1248,7 +1268,8 @@ nav {
 .csv-chip-rm:hover { color:var(--accent); }
 
 /* ════════════ HIGHLIGHT SPANS ════════════ */
-.pera-hl { border-radius:3px; padding:0 3px; cursor:pointer; display:inline; line-height:inherit; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+.pera-hl { border-radius:3px; padding:0 3px; cursor:default; display:inline; line-height:inherit; -webkit-box-decoration-break:clone; box-decoration-break:clone; }
+#chapter-content.hl-click-mode .pera-hl { cursor:pointer; }
 .pera-hl.lv5 { background:none !important; }
 /* Mined highlight — grey underline style */
 .pera-hl.mined { background: rgba(107,114,128,0.18) !important; border-bottom: 1.5px dashed #9ca3af; border-radius: 2px; }
@@ -6479,7 +6500,13 @@ function _applyHlStyle(span, col, lv) {
 }
 
 // ── Apply/remove highlights on chapter content ──
+// Debounce: rapid consecutive calls (CSV load + settings change etc.) collapse into one 40ms tick
+let _applyHighlightsTimer = null;
 function applyHighlights() {
+  clearTimeout(_applyHighlightsTimer);
+  _applyHighlightsTimer = setTimeout(applyHighlightsImpl, 40);
+}
+function applyHighlightsImpl() {
   const content = document.getElementById('chapter-content');
   if (!content) return;
   // Clear badge focus filter when highlights rebuild
@@ -6545,10 +6572,7 @@ function applyHighlights() {
         if (isMined) {
           span.dataset.lv = '0';
           span.textContent = text.slice(h.start, h.end);
-          span.addEventListener('mouseenter', () => {
-            if (!peraSettings.clickTooltip) hlShowMinedTip(span);
-          });
-          span.addEventListener('mouseleave', () => { if (!peraSettings.clickTooltip && !_tipPinned && !_tipEditMode) _hideTip(); });
+          // No per-span listeners — handled by delegated listener on #chapter-content
         } else {
           const set = csvSets[h.si];
           const entry = set.words[h.origWord] || set.words[h.word] || {};
@@ -6574,10 +6598,7 @@ function applyHighlights() {
               }
             }
           }
-          span.addEventListener('mouseenter', () => {
-            if (!peraSettings.clickTooltip) hlShowTip(span);
-          });
-          span.addEventListener('mouseleave', () => { if (!peraSettings.clickTooltip && !_tipPinned && !_tipEditMode) _hideTip(); });
+          // No per-span listeners — handled by delegated listener on #chapter-content
         }
 
         frag.appendChild(span);
@@ -6592,10 +6613,13 @@ function applyHighlights() {
     }
   }
   walkNode(content);
-  vfContextSave(); // persist accumulated context sentences
+  // Debounced vfContextSave — do NOT call synchronously inside highlight rebuild
+  // (avoids an IndexedDB write on every one of the 32+ applyHighlights calls)
+  clearTimeout(applyHighlightsImpl._ctxTimer);
+  applyHighlightsImpl._ctxTimer = setTimeout(vfContextSave, 2000);
   // Debounced badge render after DOM settles
-  clearTimeout(applyHighlights._badgeTimer);
-  applyHighlights._badgeTimer = setTimeout(renderBadge, 300);
+  clearTimeout(applyHighlightsImpl._badgeTimer);
+  applyHighlightsImpl._badgeTimer = setTimeout(renderBadge, 300);
   // Refresh unique words sidebar if open (CSV set changed means known words changed)
   refreshUwordsIfOpen();
   // Refresh highlights panel + apply hidden state
@@ -8487,6 +8511,7 @@ function hlApplyLevel(span, newLv) {
   const _card = vfCards.find(c => c.word === wordKey);
   if (_card) { _card.level = newLv; _card.status = prog[wordKey].status; }
   const _progJson = JSON.stringify(prog);
+  vfProgressCacheInvalidate();
   kvSync.setItem(VF_KEY, _progJson);
   kvSync.setItem(VF_KEY_V2, _progJson);
   csvSave();
@@ -8890,30 +8915,66 @@ function _getWordAtPoint(el, offsetX) {
 let _hoverDictLastX = 0;
 let _hoverDictLastY = 0;
 
+// Throttled mousemove — only runs once per animation frame to avoid
+// excessive work on every pixel of mouse movement (critical for Brave)
+let _mousemoveRafPending = false;
 document.addEventListener('mousemove', e => {
-  if (!peraSettings.hoverDict) return;
-  if (_tipPinned || _tipEditMode) return;
-  if (!e.target.closest?.('#chapter-content')) { _cancelHoverDict(); return; }
-  if (e.target.closest?.('.pera-hl')) { _cancelHoverDict(); return; } // CSV word — skip
-  _hoverDictLastX = e.clientX;
-  _hoverDictLastY = e.clientY;
-  _cancelHoverDict();
-  _hoverDictTimer = setTimeout(() => {
-    const word = _getWordAtPoint(e.target, e.clientX);
-    if (!word || word === _hoverDictLastWord) return;
-    _hoverDictLastWord = word;
-    openDictSidebar(word);
-  }, 350);
+  if (_mousemoveRafPending) return;
+  _mousemoveRafPending = true;
+  requestAnimationFrame(() => {
+    _mousemoveRafPending = false;
+    if (!peraSettings.hoverDict) return;
+    if (_tipPinned || _tipEditMode) return;
+    if (!e.target.closest?.('#chapter-content')) { _cancelHoverDict(); return; }
+    if (e.target.closest?.('.pera-hl')) { _cancelHoverDict(); return; } // CSV word — skip
+    _hoverDictLastX = e.clientX;
+    _hoverDictLastY = e.clientY;
+    _cancelHoverDict();
+    _hoverDictTimer = setTimeout(() => {
+      const word = _getWordAtPoint(e.target, e.clientX);
+      if (!word || word === _hoverDictLastWord) return;
+      _hoverDictLastWord = word;
+      openDictSidebar(word);
+    }, 350);
+  });
 });
 
-// ── connSyncClickMode — sync cursor style on all .pera-hl spans ──────────────
-// Called whenever the "Click to Show Tooltip" setting changes so spans
-// immediately show the right cursor without needing a full highlight rebuild.
-function connSyncClickMode() {
-  const cursor = peraSettings.clickTooltip ? 'pointer' : '';
-  document.querySelectorAll('#chapter-content .pera-hl').forEach(s => {
-    s.style.cursor = cursor;
+// ── Delegated hover listeners for .pera-hl spans ──────────────────────────────
+// Instead of attaching mouseenter/mouseleave to every span (can be hundreds or
+// thousands per chapter), we attach TWO listeners on the stable #chapter-content
+// container and dispatch from there. This is set up once on DOMContentLoaded and
+// never needs to be re-attached when highlights rebuild.
+(function _initHlDelegation() {
+  function getHlSpan(e) {
+    return e.target.closest?.('.pera-hl') || null;
+  }
+  document.addEventListener('mouseover', e => {
+    const span = getHlSpan(e);
+    if (!span) return;
+    if (!span.closest('#chapter-content')) return;
+    if (peraSettings.clickTooltip) return;
+    if (span.classList.contains('mined')) {
+      hlShowMinedTip(span);
+    } else {
+      hlShowTip(span);
+    }
   });
+  document.addEventListener('mouseout', e => {
+    const span = getHlSpan(e);
+    if (!span) return;
+    if (!span.closest('#chapter-content')) return;
+    // Only hide if we're leaving the span entirely (not moving to a child)
+    if (span.contains(e.relatedTarget)) return;
+    if (!peraSettings.clickTooltip && !_tipPinned && !_tipEditMode) _hideTip();
+  });
+})();
+
+// ── connSyncClickMode — sync cursor style on all .pera-hl spans ──────────────
+// Uses a CSS class on the container instead of touching every span individually.
+// The stylesheet rule: #chapter-content.hl-click-mode .pera-hl { cursor: pointer; }
+function connSyncClickMode() {
+  const cc = document.getElementById('chapter-content');
+  if (cc) cc.classList.toggle('hl-click-mode', !!peraSettings.clickTooltip);
 }
 
 // ── Click mode ────────────────────────────────────
@@ -9451,15 +9512,21 @@ async function _lzDecompress(b64) {
 }
 
 // Synchronous decompress using a cached plain copy as fallback
+// In-memory cache for vfLoadProgress — avoids repeated JSON.parse on the same data.
+// Invalidated whenever vfSaveProgress writes new data.
+let _vfProgressCache = null;
+function vfProgressCacheInvalidate() { _vfProgressCache = null; }
 function vfLoadProgress() {
+  if (_vfProgressCache) return _vfProgressCache;
   try {
     // Try legacy uncompressed key first (migration path)
     const legacy = kvSync.getItem(VF_KEY);
-    if (legacy) return JSON.parse(legacy);
+    if (legacy) { _vfProgressCache = JSON.parse(legacy); return _vfProgressCache; }
     const raw = kvSync.getItem(VF_KEY_V2);
     if (!raw) return {};
     // v2 stores plain JSON (async compression happens on save; load is always sync)
-    return JSON.parse(raw);
+    _vfProgressCache = JSON.parse(raw);
+    return _vfProgressCache;
   } catch(e) { return {}; }
 }
 
@@ -9472,6 +9539,9 @@ async function vfSaveProgress() {
   vfCards.forEach(c => { prog[c.word] = { level: c.level, status: c.status }; });
 
   const json = JSON.stringify(prog);
+
+  // Invalidate in-memory cache before writing so next vfLoadProgress() re-parses fresh data
+  vfProgressCacheInvalidate();
 
   // Always save plain JSON to VF_KEY so vfLoadProgress() (sync) can always read it
   kvSync.setItem(VF_KEY, json);
@@ -10600,6 +10670,7 @@ function _vfUpdateStudyRecord(word, mutate) {
   const prog = vfLoadProgress();
   if (!prog[word]) prog[word] = {};
   mutate(prog[word]);
+  vfProgressCacheInvalidate();
   kvSync.setItem(VF_KEY, JSON.stringify(prog));
 }
 
@@ -11167,6 +11238,7 @@ function mvMasteredImport(input) {
     });
 
     const json = JSON.stringify(prog);
+    vfProgressCacheInvalidate();
     kvSync.setItem(VF_KEY, json);
     kvSync.setItem(VF_KEY_V2, json);
     csvSave();
