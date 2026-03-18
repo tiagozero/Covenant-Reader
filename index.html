@@ -3468,6 +3468,7 @@ function _kvOpen() {
     };
     req.onsuccess = e => { _kvDb = e.target.result; _kvDb.onversionchange = () => { _kvDb.close(); _kvDb = null; }; resolve(_kvDb); };
     req.onerror   = e => reject(e.target.error);
+    req.onblocked = () => { if (_kvDb) { _kvDb.close(); _kvDb = null; } };
   });
 }
 
@@ -3585,7 +3586,9 @@ function openDB() {
     };
     req.onerror = e => reject(e.target.error);
     // If blocked by a stale connection, reload to get a clean slate (handles VS Code Live Server hot-reloads).
-    req.onblocked = () => { window.location.reload(); };
+    // Do NOT reload on blocked — causes an infinite reload loop on GitHub Pages.
+    // Instead close any stale connection so the pending open can proceed immediately.
+    req.onblocked = () => { if (db) { db.close(); db = null; } };
   });
 }
 
@@ -5749,11 +5752,13 @@ function loadChapter(idx) {
     _htmlParts.shift();
   }
   const cleanHtml = _htmlParts.join('\n');
-  document.getElementById('chapter-content').innerHTML =
-    `<h2 class="chapter-heading">${esc(ch.title)}</h2>\n` + cleanHtml +
+  const _fullChapterHtml = `<h2 class="chapter-heading">${esc(ch.title)}</h2>\n` + cleanHtml +
     `\n<div id="chapter-complete-bar" class="chapter-complete-bar">
       <button class="chapter-complete-btn" onclick="showSessionStats()">✓ Chapter Completed</button>
     </div>`;
+  // Cache so applyHighlights can reset content in one op instead of unwrapping spans one-by-one
+  applyHighlights._cleanHtml = _fullChapterHtml;
+  document.getElementById('chapter-content').innerHTML = _fullChapterHtml;
   document.getElementById('topbar-title').innerHTML = `<strong>${esc(ch.title)}</strong>`;
   document.querySelectorAll('.chapter-item').forEach((el, i) => el.classList.toggle('active', i === idx));
   requestAnimationFrame(() => {
@@ -6505,20 +6510,36 @@ function applyHighlights() {
     });
   } catch(_e) {}
 
-  // Remove existing highlights — restore plain text nodes
-  content.querySelectorAll('.pera-hl').forEach(span => {
-    const parent = span.parentNode;
-    if (!parent) return;
-    const clone = span.cloneNode(true);
-    clone.querySelectorAll('rt').forEach(rt => rt.remove());
-    span.replaceWith(document.createTextNode(clone.textContent));
-  });
-  // Normalize text nodes after unwrapping
-  content.normalize();
+  // Remove existing highlights — reset via cached innerHTML (single DOM op, far faster than
+  // unwrapping every span individually which causes N separate reflows).
+  if (content.querySelector('.pera-hl')) {
+    if (applyHighlights._cleanHtml != null) {
+      content.innerHTML = applyHighlights._cleanHtml;
+    } else {
+      // Fallback for edge cases where cache isn't set yet
+      content.querySelectorAll('.pera-hl').forEach(span => {
+        const parent = span.parentNode;
+        if (!parent) return;
+        const clone = span.cloneNode(true);
+        clone.querySelectorAll('rt').forEach(rt => rt.remove());
+        span.replaceWith(document.createTextNode(clone.textContent));
+      });
+      content.normalize();
+    }
+  }
 
-  if (!csvSets.length) return;
+  // Must highlight mined words even when no CSV sets are loaded
+  const _minedEntries = mvMineLoad();
+  if (!csvSets.length && !_minedEntries.length) return;
   _buildHlTrie();
   // Accumulate occurrence counts across chapters (don't clear — needed for Hide Common filter)
+
+  // Hoist storage reads: parse localStorage ONCE per call, not once per span.
+  // _hlIsIgnored / ignoredCsvHas / _hlIsFocused each re-parse localStorage JSON
+  // on every invocation — with hundreds of spans this is the main perf bottleneck.
+  const _ignoreSet     = _hlIgnoreLoad();
+  const _ignoredCsvSet = peraSettings.ignoredCsv ? ignoredCsvLoad() : new Set();
+  const _focusSet      = new Set(_hlFocusLoad().map(e => e.word));
 
   const SKIP = new Set(['SCRIPT','STYLE','CODE','PRE','KBD','SAMP','VAR','TEXTAREA','INPUT','SELECT']);
 
@@ -6535,8 +6556,8 @@ function applyHighlights() {
 
         const isMined = h.si === MINED_SI;
         const span = document.createElement('span');
-        const _isHlIgnored = !isMined && (_hlIsIgnored(h.word) || ignoredCsvHas(h.word));
-        const _isHlFocused = !isMined && _hlIsFocused(h.word);
+        const _isHlIgnored = !isMined && (_ignoreSet.has(h.word) || _ignoredCsvSet.has(h.word));
+        const _isHlFocused = !isMined && _focusSet.has(h.word);
         span.className = 'pera-hl' + (isMined ? ' mined' : '') + (_isHlIgnored ? ' hl-ignored' : '') + (_isHlFocused ? ' focused' : '');
         span.dataset.word = h.word;
         span.dataset.origWord = h.origWord;
@@ -6606,6 +6627,27 @@ function applyHighlights() {
   if (typeof _applyAllNoteIndicators === 'function') setTimeout(_applyAllNoteIndicators, 50);
 }
 
+
+// ── Fast-path highlight update ───────────────────────────────────────────────
+// Used by Ignore Word and Focus Word. Instead of a full applyHighlights() call
+// (trie rebuild + full DOM unwrap + re-walk), this just finds all existing spans
+// for the target word and toggles their CSS classes in place. Near-instant.
+function _applyHighlightFast(wordKey) {
+  const wl = wordKey.toLowerCase();
+  const content = document.getElementById('chapter-content');
+  if (!content) return;
+  const isIgnored = _hlIsIgnored(wl) || ignoredCsvHas(wl);
+  const isFocused = _hlIsFocused(wl);
+  content.querySelectorAll('.pera-hl').forEach(span => {
+    const sw = (span.dataset.origWord || span.dataset.word || '').toLowerCase();
+    if (sw !== wl) return;
+    span.classList.toggle('hl-ignored', isIgnored);
+    span.classList.toggle('focused', isFocused);
+  });
+  clearTimeout(applyHighlights._badgeTimer);
+  applyHighlights._badgeTimer = setTimeout(renderBadge, 300);
+  refreshUwordsIfOpen();
+}
 // ── Tooltip ────────────────────────────────────────
 // ── Settings ──────────────────────────────────────
 const PERA_SETTINGS_KEY = 'pera-reader-settings';
@@ -7717,9 +7759,8 @@ function _buildTipContent(span, set, entry, lv, wordKey) {
         hlToast(`✕ "${_ignWord}" ignored`);
         _hideTip();
       }
-      // Re-apply highlights to reflect change across all spans
-      _hlTrie = null;
-      applyHighlights();
+      // Fast path: toggle CSS classes on existing spans only — no full re-render needed
+      _applyHighlightFast(_ignWord);
     });
   }
 
@@ -7740,7 +7781,8 @@ function _buildTipContent(span, set, entry, lv, wordKey) {
         _focusBtn.classList.add('active');
         hlToast(`★ "${_focusWord}" added to Focus`);
       }
-      applyHighlights();
+      // Fast path: toggle CSS classes on existing spans only — no full re-render needed
+      _applyHighlightFast(_focusWord);
       if (document.getElementById('mv-panel-focus')?.classList.contains('active')) mvRenderFocus();
     });
   }
