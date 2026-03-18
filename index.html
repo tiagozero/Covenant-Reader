@@ -5809,6 +5809,10 @@ function loadChapter(idx) {
   if (idx < 0 || idx >= chapters.length) return;
   currentChap = idx;
   saveLastChapter(idx);
+  // FIX: invalidate chapter token cache so computeUwords book-mode re-tokenizes
+  // only chapters whose HTML has actually changed (after a new book load).
+  // Clearing the whole map here is safe — it's rebuilt on demand.
+  _uwordsChapterTokenCache = new Map();
   // Reset session stats for this chapter
   _sessionLevelUps = 0;
   _sessionMasters  = 0;
@@ -5831,12 +5835,17 @@ function loadChapter(idx) {
   document.querySelectorAll('.chapter-item').forEach((el, i) => el.classList.toggle('active', i === idx));
   requestAnimationFrame(() => {
     document.querySelector(".chapter-item.active")?.scrollIntoView({ block: "nearest" });
-    if (csvSets.length) applyHighlights();
-    else if (peraSettings.csActive) csApplyHighlights();
-    refreshUwordsIfOpen();
-    _hlpRefreshAfterChapterLoad();
-    // Build page-turn pages AFTER highlights are applied so spans are in the HTML
-    applyScrollMode();
+    // FIX: defer heavy highlight work so the browser can paint the new chapter
+    // text first — previously applyHighlights() ran synchronously inside rAF,
+    // blocking rendering and making chapter switches feel sluggish.
+    setTimeout(() => {
+      if (csvSets.length) applyHighlights();
+      else if (peraSettings.csActive) csApplyHighlights();
+      refreshUwordsIfOpen();
+      _hlpRefreshAfterChapterLoad();
+      // Build page-turn pages AFTER highlights are applied so spans are in the HTML
+      applyScrollMode();
+    }, 0);
   });
   document.getElementById('reader-main').scrollTo(0, 0);
   // Update prev/next button disabled state
@@ -5943,6 +5952,11 @@ function setupAudio(src) {
   document.getElementById('reader-view').classList.add('audio-active');
 }
 
+// FIX: track whether bookmark markers need a re-render.
+// Markers only change when bookmarks are added/removed — not on every timeupdate.
+let _bmMarkersDirty = true;
+function _markBmDirty() { _bmMarkersDirty = true; }
+
 function syncUI() {
   if (!audioEl) return;
   const cur = audioEl.currentTime || 0;
@@ -5952,7 +5966,8 @@ function syncUI() {
   const t = fmt(cur) + ' / ' + fmt(dur);
   document.getElementById('timeDisplay').textContent = t;
   document.getElementById('player-time').textContent = t;
-  renderBookmarkMarkers();
+  // FIX: only rebuild marker DOM when bookmarks have changed, not every tick
+  if (_bmMarkersDirty) { renderBookmarkMarkers(); _bmMarkersDirty = false; }
 }
 
 function renderBookmarkMarkers() {
@@ -6042,6 +6057,8 @@ async function loadBookmarks(title) {
 function saveBookmarks() {
   if (!currentBookKey) return;
   try { kvSync.setItem(currentBookKey, JSON.stringify(bookmarks)); } catch(e) {}
+  // FIX: mark dirty so syncUI re-renders markers on the next timeupdate tick
+  _markBmDirty();
   renderBookmarkMarkers();
 }
 
@@ -6356,7 +6373,7 @@ function handleCsvUpload(input) {
       // Re-apply highlights if reader is currently open
       if (document.getElementById('reader-view')?.style.display === 'block') {
         computeBookStats();
-        applyHighlights();
+        scheduleHighlights();
       }
     };
     reader.readAsText(file);
@@ -6371,7 +6388,7 @@ function removeCsv(name) {
   vfSyncFiles();
   if (document.getElementById('reader-view')?.style.display === 'block') {
     computeBookStats();
-    applyHighlights();
+    scheduleHighlights();
   }
 }
 
@@ -6553,6 +6570,16 @@ function _applyHlStyle(span, col, lv) {
   }
 }
 
+// ── Debounced highlight scheduler ──────────────────
+// All mine / ignore / focus actions call scheduleHighlights() instead of
+// applyHighlights() directly.  This collapses rapid successive calls
+// (e.g. Mine-All) into a single DOM pass after a short idle period.
+let _hlScheduleTimer = null;
+function scheduleHighlights(delay) {
+  clearTimeout(_hlScheduleTimer);
+  _hlScheduleTimer = setTimeout(() => { _hlScheduleTimer = null; applyHighlights(); }, delay || 60);
+}
+
 // ── Apply/remove highlights on chapter content ──
 function applyHighlights() {
   const content = document.getElementById('chapter-content');
@@ -6596,6 +6623,14 @@ function applyHighlights() {
   _buildHlTrie();
   // Accumulate occurrence counts across chapters (don't clear — needed for Hide Common filter)
 
+  // FIX: hoist ignore/focus sets out of the per-word loop — previously each
+  // matched word called _hlIsIgnored/_hlIsFocused which both do JSON.parse
+  // on every invocation, causing O(n) parses for O(n) matched words.
+  const _ignoredSetHL  = _hlIgnoreLoad();
+  const _focusedArrHL  = _hlFocusLoad();
+  const _focusedSetHL  = new Set(_focusedArrHL.map(e => e.word));
+  const _ignoredCsvSetHL = (peraSettings.ignoredCsv) ? ignoredCsvLoad() : new Set();
+
   const SKIP = new Set(['SCRIPT','STYLE','CODE','PRE','KBD','SAMP','VAR','TEXTAREA','INPUT','SELECT']);
 
   function walkNode(node) {
@@ -6611,8 +6646,9 @@ function applyHighlights() {
 
         const isMined = h.si === MINED_SI;
         const span = document.createElement('span');
-        const _isHlIgnored = !isMined && (_hlIsIgnored(h.word) || ignoredCsvHas(h.word));
-        const _isHlFocused = !isMined && _hlIsFocused(h.word);
+        const _wl = h.word.toLowerCase();
+        const _isHlIgnored = !isMined && (_ignoredSetHL.has(_wl) || _ignoredCsvSetHL.has(_wl));
+        const _isHlFocused = !isMined && _focusedSetHL.has(_wl);
         span.className = 'pera-hl' + (isMined ? ' mined' : '') + (_isHlIgnored ? ' hl-ignored' : '') + (_isHlFocused ? ' focused' : '');
         span.dataset.word = h.word;
         span.dataset.origWord = h.origWord;
@@ -6684,7 +6720,18 @@ function applyHighlights() {
 }
 
 // ── Tooltip ────────────────────────────────────────
-// ── Settings ──────────────────────────────────────
+// FIX: fast word→span lookup used by parent-word click handlers.
+// Scans the reader content once per call (O(n) over visible spans),
+// but avoids multiple separate querySelectorAll passes.
+function _getSpanByWord(wordLower) {
+  const rc = _readerContent() || document.getElementById('chapter-content');
+  if (!rc) return null;
+  const spans = rc.querySelectorAll('.pera-hl');
+  for (const s of spans) {
+    if ((s.dataset.word || '').toLowerCase() === wordLower) return s;
+  }
+  return null;
+}
 const PERA_SETTINGS_KEY = 'pera-reader-settings';
 
 function settingsLoad() {
@@ -7233,7 +7280,7 @@ function applyTheme(themeKey) {
   peraSettings.lightMode = t.light; // keep in sync for highlight color logic
 
   // Re-apply highlights so colors update for the new mode
-  if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+  if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
 }
 
 function applyLightMode(on) {
@@ -7335,7 +7382,7 @@ function openSettingsOverlay() {
     _updateIgnoredCsvSection();
     // Re-apply highlights so ignored words update immediately
     if (document.getElementById('reader-view')?.style.display === 'block') {
-      _hlTrie = null; applyHighlights();
+      _hlTrie = null; scheduleHighlights();
     }
     if (_uwordsSidebarOpen) { computeUwords(); renderUwordsFiltered(); }
   };
@@ -7439,7 +7486,7 @@ function openSettingsOverlay() {
       togMasteryUnderline.classList.toggle('on', peraSettings.masteryUnderline);
       settingsSave();
       // Re-apply highlights so underline state updates immediately
-      if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+      if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
     };
   }
   // Re-wire sliders (they may have been moved to overlay)
@@ -7490,7 +7537,7 @@ function renderCsvColorEditor() {
         swatch.style.background = col.darkHover;
         inp.classList.remove('invalid');
         csvSave();
-        applyHighlights();
+        scheduleHighlights();
         return;
       }
       const hex = raw.startsWith('#') ? raw : '#' + raw;
@@ -7502,7 +7549,7 @@ function renderCsvColorEditor() {
       set.customColor = hex.toUpperCase();
       swatch.style.background = hex;
       csvSave();
-      applyHighlights();
+      scheduleHighlights();
     };
 
     inp.addEventListener('blur', applyColor);
@@ -7704,10 +7751,8 @@ function tipSidebarShow(span, set, entry, lv, wordKey) {
   const parentLink = body.querySelector('.tip-parent-word');
   if (parentLink) parentLink.addEventListener('click', e => {
     e.stopPropagation();
-    let pSpan = null;
-    document.querySelectorAll('.pera-hl').forEach(s => {
-      if (!pSpan && (s.dataset.word||'').toLowerCase() === parentLink.dataset.parent.toLowerCase()) pSpan = s;
-    });
+    // FIX: use cached span map instead of full DOM scan
+    const pSpan = _getSpanByWord(parentLink.dataset.parent.toLowerCase());
     if (pSpan) hlShowTip(pSpan);
   });
 
@@ -7727,7 +7772,7 @@ function tipSidebarShow(span, set, entry, lv, wordKey) {
       focusBtn.classList.add('active');
       hlToast(`★ "${w}" added to Focus`);
     }
-    if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+    if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
   });
 
   // Ignore button
@@ -7746,7 +7791,7 @@ function tipSidebarShow(span, set, entry, lv, wordKey) {
       ignoreBtn.classList.add('ignored');
       hlToast(`✕ "${w}" ignored`);
     }
-    _hlTrie = null; applyHighlights();
+    _hlTrie = null; scheduleHighlights();
   });
 
   // ── Notes ──────────────────────────────────────────
@@ -8032,11 +8077,9 @@ function _buildTipContent(span, set, entry, lv, wordKey) {
   const parentLink = _tip.querySelector('.tip-parent-word');
   if (parentLink) parentLink.addEventListener('click', e => {
     e.stopPropagation();
-    const pw = parentLink.dataset.parent;
-    let pSpan = null;
-    document.querySelectorAll('.pera-hl').forEach(s => {
-      if (!pSpan && (s.dataset.word||'').toLowerCase() === pw.toLowerCase()) pSpan = s;
-    });
+    const pw = parentLink.dataset.parent.toLowerCase();
+    // FIX: use the cached span map instead of scanning every .pera-hl in the DOM
+    const pSpan = _getSpanByWord(pw);
     if (pSpan) { _tipPinned = false; hlShowTip(pSpan); }
     else _showTipEditMode(span, wordKey, entry, set);
   });
@@ -8066,7 +8109,7 @@ function _buildTipContent(span, set, entry, lv, wordKey) {
       }
       // Re-apply highlights to reflect change across all spans
       _hlTrie = null;
-      applyHighlights();
+      scheduleHighlights();
     });
   }
 
@@ -8087,7 +8130,7 @@ function _buildTipContent(span, set, entry, lv, wordKey) {
         _focusBtn.classList.add('active');
         hlToast(`★ "${_focusWord}" added to Focus`);
       }
-      applyHighlights();
+      scheduleHighlights();
       if (document.getElementById('mv-panel-focus')?.classList.contains('active')) mvRenderFocus();
     });
   }
@@ -8305,7 +8348,7 @@ function mineRemoveFromTip(phrase) {
 _mvMinePersist(entries);
     // Invalidate trie + re-highlight
     _hlTrie = null;
-    applyHighlights();
+    scheduleHighlights();
     if (document.getElementById('mv-panel-mining')?.classList.contains('active')) mvRenderMined();
     hlToast(`✕ "${phrase}" removed from mining`);
   }
@@ -8678,7 +8721,7 @@ function mineConfirm() {
 
   // Invalidate trie cache and re-apply highlights to show grey mark
   _hlTrie = null;
-  applyHighlights();
+  scheduleHighlights();
 
   // Refresh mining list if it's visible
   if (document.getElementById('mv-panel-mining')?.classList.contains('active')) mvRenderMined();
@@ -8760,7 +8803,7 @@ function _pillMineSave(word) {
     entries.unshift({ word, ph: '', def, ts: Date.now() });
     _mvMinePersist(entries);
     _hlTrie = null;
-    applyHighlights();
+    scheduleHighlights();
     if (document.getElementById('mv-panel-mining')?.classList.contains('active')) mvRenderMined();
     hlToast(`⚡ "${word}" mined!`);
   }
@@ -8776,7 +8819,7 @@ function _pillMineRemove(word) {
     entries.splice(idx, 1);
     _mvMinePersist(entries);
     _hlTrie = null;
-    applyHighlights();
+    scheduleHighlights();
     if (document.getElementById('mv-panel-mining')?.classList.contains('active')) mvRenderMined();
     hlToast(`✕ "${word}" removed from mining`);
   }
@@ -9123,7 +9166,7 @@ document.addEventListener('keydown', e => {
             _hlFocusWord(w);
             hlToast(`★ "${w}" added to Focus`);
           }
-          if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+          if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
         }
       }
 
@@ -9145,7 +9188,7 @@ document.addEventListener('keydown', e => {
             _hlIgnoreWord(w);
             hlToast(`✕ "${w}" ignored`);
           }
-          _hlTrie = null; applyHighlights();
+          _hlTrie = null; scheduleHighlights();
         }
       }
     }
@@ -10453,19 +10496,27 @@ function vfShowMC() {
   while (wrong.length < 3) wrong.push('—');
   const opts = [c.def, ...wrong].sort(() => Math.random()-0.5);
   const pct = (vfMcIdx / vfMcCards.length) * 100;
+  // FIX: store options in a module-level array and reference by index so that
+  // words/definitions containing apostrophes or quotes don't break the onclick.
+  window._vfMcOpts = opts;
   area.innerHTML = `<div style="display:flex;flex-direction:column;align-items:center;padding:24px 16px;gap:14px;">
     ${vfProgBar(pct, vfMcIdx, vfMcCards.length, vfMcScore)}
     <div style="background:var(--surface);border:1px solid var(--border2);border-radius:14px;padding:28px;max-width:480px;width:100%;text-align:center;">
       <div style="font-family:'Instrument Serif',serif;font-size:2rem;font-weight:700;margin-bottom:20px">${esc(c.word)}</div>
       <div class="vf-mc-opts">
-        ${opts.map(opt => `<button class="vf-mc-btn" onclick="vfCheckMC(this,'${opt.replace(/'/g,"\\'").replace(/\n/g,' ')}','${c.def.replace(/'/g,"\\'").replace(/\n/g,' ')}','${c.word.replace(/'/g,"\\'")}')">${esc(opt)}</button>`).join('')}
+        ${opts.map((opt, oi) => `<button class="vf-mc-btn" onclick="vfCheckMC(this,${oi})">${esc(opt)}</button>`).join('')}
       </div>
     </div>
   </div>`;
 }
-function vfCheckMC(btn, chosen, correct, word) {
+function vfCheckMC(btn, chosenIdx) {
+  // FIX: retrieve actual strings from the safe store instead of from onclick attrs
+  const opts    = window._vfMcOpts || [];
+  const chosen  = opts[chosenIdx] || '';
+  const c       = vfMcCards[vfMcIdx];
+  if (!c) return;
+  const correct = c.def;
   document.querySelectorAll('.vf-mc-btn').forEach(b => b.disabled = true);
-  const c = vfMcCards.find(x => x.word === word);
   if (chosen === correct) {
     btn.classList.add('ok'); vfMcScore++;
     if (c) { c.level = Math.min(5,(c.level||1)+1); c.status = c.level>=5?'mastered':c.level>=2?'studying':'new'; vfRecordStudyPass(c.word); }
@@ -11144,7 +11195,7 @@ function mvMineSaveEntry() {
   if (status) { status.textContent = `✓ "${word}" captured (${entries.length}/${MV_MINE_MAX})`; status.style.color = '#4ade80'; setTimeout(() => { if (status) status.textContent = ''; }, 2500); }
   // Refresh trie so mined word gets highlighted in reader
   _hlTrie = null;
-  if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+  if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
   mvRenderMined();
 }
 
@@ -11188,14 +11239,14 @@ function mvFocusDelete(idx) {
   const arr = _hlFocusLoad();
   arr.splice(idx, 1);
   _hlFocusSave(arr);
-  applyHighlights();
+  scheduleHighlights();
   mvRenderFocus();
 }
 
 function mvFocusClearAll() {
   if (!confirm('Remove all focus words?')) return;
   _hlFocusSave([]);
-  applyHighlights();
+  scheduleHighlights();
   mvRenderFocus();
 }
 
@@ -11257,7 +11308,7 @@ function mvMineDelete(idx) {
   entries.splice(idx, 1);
   _mvMinePersist(entries);
   _hlTrie = null;
-  if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+  if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
   mvRenderMined();
 }
 
@@ -11265,7 +11316,7 @@ function mvMineClearAll() {
   if (!confirm('Clear all mined words?')) return;
   kvSync.removeItem(MV_MINE_KEY);
   _hlTrie = null;
-  if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+  if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
   mvRenderMined();
 }
 
@@ -11523,7 +11574,7 @@ function mvMasteredImport(input) {
     csvSave();
 
     // Refresh highlights and UI
-    if (typeof applyHighlights === 'function') applyHighlights();
+    if (typeof applyHighlights === 'function') scheduleHighlights();
     mvRenderMastered();
     if (typeof coreUpdateStats === 'function') coreUpdateStats();
     if (typeof vfUpdateStats === 'function') vfUpdateStats();
@@ -11686,10 +11737,17 @@ function csCatSelectHTML(id, selectedCat, extraStyle) {
 
 const CS_RULES_KEY = 'pera-cs-rules';
 
+// FIX: in-memory cache so csRulesLoad() doesn't JSON.parse on every call.
+// The cache is invalidated whenever csRulesSave() is called.
+let _csRulesCache = null;
+
 function csRulesLoad() {
-  try { return JSON.parse(kvSync.getItem(CS_RULES_KEY) || '[]'); } catch { return []; }
+  if (_csRulesCache !== null) return _csRulesCache;
+  try { _csRulesCache = JSON.parse(kvSync.getItem(CS_RULES_KEY) || '[]'); } catch { _csRulesCache = []; }
+  return _csRulesCache;
 }
 function csRulesSave(rules) {
+  _csRulesCache = rules; // update cache immediately
   try { kvSync.setItem(CS_RULES_KEY, JSON.stringify(rules)); } catch {}
 }
 
@@ -12677,10 +12735,17 @@ const _UWORDS_IGNORE_KEY = 'pera-uwords-ignored';
 
 // ── CSV-word ignore list (separate from unique-words ignore) ──
 const _HL_IGNORE_KEY = 'pera-hl-ignored';
+// FIX: in-memory cache — invalidated on every save so reads outside
+// applyHighlights (e.g. hover-def check, tooltip open) don't JSON.parse repeatedly.
+let _hlIgnoreCache = null;
 function _hlIgnoreLoad() {
-  try { return new Set(JSON.parse(kvSync.getItem(_HL_IGNORE_KEY) || '[]')); } catch { return new Set(); }
+  if (_hlIgnoreCache !== null) return _hlIgnoreCache;
+  try { _hlIgnoreCache = new Set(JSON.parse(kvSync.getItem(_HL_IGNORE_KEY) || '[]')); }
+  catch { _hlIgnoreCache = new Set(); }
+  return _hlIgnoreCache;
 }
 function _hlIgnoreSave(s) {
+  _hlIgnoreCache = s; // keep cache in sync
   try { kvSync.setItem(_HL_IGNORE_KEY, JSON.stringify([...s])); } catch {}
 }
 function _hlIsIgnored(word) { return _hlIgnoreLoad().has(word.toLowerCase()); }
@@ -12690,10 +12755,16 @@ function _hlUnignoreWord(word) { const s = _hlIgnoreLoad(); s.delete(word.toLowe
 // ── FOCUS WORDS storage ──────────────────────────────
 // Stored as [{word, origWord, def, ts}] — no TTL, persist until manually removed
 const _HL_FOCUS_KEY = 'pera-hl-focused';
+// FIX: in-memory cache for focus list — same pattern as ignore cache above.
+let _hlFocusCache = null;
 function _hlFocusLoad() {
-  try { return JSON.parse(kvSync.getItem(_HL_FOCUS_KEY) || '[]'); } catch { return []; }
+  if (_hlFocusCache !== null) return _hlFocusCache;
+  try { _hlFocusCache = JSON.parse(kvSync.getItem(_HL_FOCUS_KEY) || '[]'); }
+  catch { _hlFocusCache = []; }
+  return _hlFocusCache;
 }
 function _hlFocusSave(arr) {
+  _hlFocusCache = arr; // keep cache in sync
   try { kvSync.setItem(_HL_FOCUS_KEY, JSON.stringify(arr)); } catch {}
 }
 function _hlIsFocused(word) {
@@ -12773,7 +12844,7 @@ function handleIgnoredCsvUpload(input) {
     _updateIgnoredCsvSection();
     // Rebuild trie + highlights immediately
     _hlTrie = null;
-    if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+    if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
     if (_uwordsSidebarOpen) { computeUwords(); renderUwordsFiltered(); }
     hlToast(`🚫 ${words.size} words added to ignore list`);
   };
@@ -12786,7 +12857,7 @@ function clearIgnoredCsv() {
   kvSync.removeItem(_IGNORED_CSV_KEY);
   _updateIgnoredCsvSection();
   _hlTrie = null;
-  if (document.getElementById('reader-view')?.style.display === 'block') applyHighlights();
+  if (document.getElementById('reader-view')?.style.display === 'block') scheduleHighlights();
   if (_uwordsSidebarOpen) { computeUwords(); renderUwordsFiltered(); }
   hlToast('🚫 Ignored words list cleared');
 }
@@ -13086,6 +13157,12 @@ function _uwordsGetKnownWords() {
   return known;
 }
 
+// FIX: cache of per-chapter plain-text tokens so book mode doesn't re-parse
+// every chapter's innerHTML on every computeUwords() call.
+// Invalidated by loadChapter (via _uwordsChapterTokenCache = new Map()) and
+// whenever chapters array is replaced.
+let _uwordsChapterTokenCache = new Map();
+
 function computeUwords() {
   if (!chapters.length) { _uwordsData = []; return; }
 
@@ -13093,15 +13170,20 @@ function computeUwords() {
   const ignored        = _uwordsIgnoreLoad();
   const ignoredCsvWords = peraSettings.ignoredCsv ? ignoredCsvLoad() : new Set();
   const freqMap        = new Map();
+  // FIX: reuse a single temp div instead of recreating it inside the loop
   const tmp            = document.createElement('div');
 
   if (_uwordsTab === 'book') {
-    // ── Book mode: scan all chapters ──────────────────
+    // ── Book mode: scan all chapters (using token cache to avoid re-parsing HTML) ──
     let totalTokens = 0, knownTokens = 0;
-    chapters.forEach(ch => {
-      tmp.innerHTML = ch.html;
-      const text = tmp.textContent || '';
-      const tokens = _uwordsTokenize(text);
+    chapters.forEach((ch, ci) => {
+      let tokens = _uwordsChapterTokenCache.get(ci);
+      if (!tokens) {
+        tmp.innerHTML = ch.html;
+        tokens = _uwordsTokenize(tmp.textContent || '');
+        _uwordsChapterTokenCache.set(ci, tokens);
+        tmp.innerHTML = '';
+      }
       totalTokens += tokens.length;
       tokens.forEach(token => {
         if (known.has(token)) { knownTokens++; return; }
@@ -13117,6 +13199,7 @@ function computeUwords() {
     if (!ch) { _uwordsData = []; return; }
     tmp.innerHTML = ch.html;
     const text       = tmp.textContent || '';
+    tmp.innerHTML    = '';
     const allTokens  = _uwordsTokenize(text);
     const totalTokens = allTokens.length;
     const knownTokens = allTokens.filter(t => known.has(t)).length;
@@ -13300,12 +13383,16 @@ function uwordMine(word, btn) {
   // Also remove from seen if it was there
   _uwordsUnmarkSeen(word);
   _hlTrie = null;
-  applyHighlights();
-  btn.classList.add('mined');
-  btn.innerHTML = '⚡';
-  btn.title = 'Already mined';
-  const item = btn.closest('.uword-item');
-  if (item) { item.classList.add('uword-highlighted'); item.classList.remove('uword-seen'); }
+  // FIX: use debounced scheduler so rapid Mine-All doesn't trigger dozens of
+  // full DOM passes.  Also guards postMessage calls where btn is null.
+  scheduleHighlights();
+  if (btn) {
+    btn.classList.add('mined');
+    btn.innerHTML = '⚡';
+    btn.title = 'Already mined';
+    const item = btn.closest('.uword-item');
+    if (item) { item.classList.add('uword-highlighted'); item.classList.remove('uword-seen'); }
+  }
   hlToast(`⚡ "${word}" mined!`);
 }
 
@@ -13345,7 +13432,7 @@ function uwordsMineAll() {
   });
   _mvMinePersist(entries);
   _hlTrie = null;
-  applyHighlights();
+  scheduleHighlights();
   renderUwordsFiltered();
   const skipped = toAdd.length - batch.length;
   hlToast(`⚡ Mined ${batch.length} word${batch.length !== 1 ? 's' : ''}${skipped > 0 ? ` (cap: ${skipped} skipped)` : ''}`);
@@ -14779,7 +14866,7 @@ function refreshUwordsIfOpen() {
 
 <!-- ════════════ CONNECTED SPEECH GUIDE MODAL ════════════ -->
 <div id="cs-guide-backdrop" style="display:none;position:fixed;inset:0;z-index:9996;background:rgba(0,0,0,0.55);" onclick="csGuideClose()"></div>
-<div id="cs-guide-modal" style="display:none;position:fixed;z-index:9997;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(660px,95vw);max-height:85vh;overflow:hidden;display:none;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
+<div id="cs-guide-modal" style="display:none;position:fixed;z-index:9997;top:50%;left:50%;transform:translate(-50%,-50%);background:var(--surface);border:1px solid var(--border2);border-radius:16px;width:min(660px,95vw);max-height:85vh;overflow:hidden;flex-direction:column;box-shadow:0 20px 60px rgba(0,0,0,0.6);">
   <div style="padding:18px 24px 14px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0;">
     <div>
       <div style="font-size:1rem;font-weight:700;letter-spacing:-0.01em;">🔗 Connected Speech — Category Guide</div>
