@@ -2402,91 +2402,6 @@ nav {
   font-size: 0.62rem; color: var(--muted); line-height: 1.5;
 }
 
-/* ════════════ READING RULER ════════════ */
-#reading-ruler {
-  position: fixed;
-  left: 0; right: 0;
-  height: 2px;
-  pointer-events: none;
-  z-index: 9000;
-  transition: opacity 0.15s;
-  opacity: 0;
-}
-#reading-ruler::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  background: var(--accent);
-  opacity: 0.55;
-}
-#reading-ruler::after {
-  content: '';
-  position: absolute;
-  top: 2px; left: 0; right: 0;
-  height: 60px;
-  background: linear-gradient(to bottom, rgba(var(--accent-rgb,232,54,93),0.07), transparent);
-}
-body.ruler-active #reading-ruler { opacity: 1; }
-
-/* ════════════ PAGE-TURN SCROLL MODE ════════════ */
-/* ── Page-turn scroll mode ── */
-.reader-main.page-turn-mode {
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-.reader-main.page-turn-mode .reader-topbar {
-  position: relative;
-  flex-shrink: 0;
-}
-/* Hide the normal continuous-scroll content area in page mode */
-.reader-main.page-turn-mode .chapter-content {
-  display: none !important;
-}
-#page-turn-viewport {
-  display: none;
-  flex: 1;
-  overflow: hidden;
-  position: relative;
-  min-height: 0;
-}
-.reader-main.page-turn-mode #page-turn-viewport {
-  display: flex;
-  flex-direction: column;
-}
-/* The visible page of text */
-#page-turn-content {
-  flex: 1;
-  overflow: hidden;
-  padding: 40px 36px 20px;
-  max-width: var(--reader-width);
-  margin: 0 auto;
-  width: 100%;
-  box-sizing: border-box;
-  opacity: 1;
-  transition: opacity 0.18s ease;
-}
-#page-turn-content.pt-fade-out { opacity: 0; }
-#page-turn-content.pt-fade-in  { opacity: 0; }
-#page-turn-viewport, #page-turn-content, #page-turn-content * {
-  cursor: default !important;
-}
-/* Bottom bar: just the page counter, no buttons */
-#page-turn-nav {
-  display: none;
-  align-items: center;
-  justify-content: center;
-  padding: 8px 24px 16px;
-  flex-shrink: 0;
-}
-.reader-main.page-turn-mode #page-turn-nav { display: flex; }
-#pt-page-info {
-  font-size: 0.65rem;
-  font-family: 'DM Mono', monospace;
-  color: var(--muted);
-  letter-spacing: 0.04em;
-}
-
 </style>
 </head>
 <body>
@@ -3259,13 +3174,6 @@ body.ruler-active #reading-ruler { opacity: 1; }
       </div>
 
       <div class="chapter-content" id="chapter-content"></div>
-      <!-- Page-turn mode viewport (hidden in continuous mode) -->
-      <div id="page-turn-viewport">
-        <div id="page-turn-content"></div>
-        <div id="page-turn-nav">
-          <span id="pt-page-info">Page 1 of 1</span>
-        </div>
-      </div>
     </div>
 
     <!-- Unique Words right sidebar -->
@@ -3629,7 +3537,7 @@ const kvSync = {
 // ════════════════════════════════════════════════════
 // SETTINGS STATE — declared early to avoid TDZ errors
 // ════════════════════════════════════════════════════
-let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false, masteryDoubleClick: false, masteryUnderline: false, readingRuler: false, scrollMode: 'continuous' };
+let peraSettings = { lightMode: false, clickTooltip: false, dictEnabled: false, hoverDict: false, translationLang: '', extDictUrl: '', theme: 'warmPaper', ignoredCsv: false, hoverDefinition: false, extDictEnabled: false, connectedSpeech: false, csActive: false, csGloss: false, sidebarTooltip: false, masteryDoubleClick: false, masteryUnderline: false };
 
 // ════════════════════════════════════════════════════
 // HAMBURGER MENU
@@ -5854,8 +5762,6 @@ function loadChapter(idx) {
     else if (peraSettings.csActive) setTimeout(csApplyHighlights, 50);
     refreshUwordsIfOpen();
     _hlpRefreshAfterChapterLoad();
-    // Build page-turn pages AFTER highlights are applied so spans are in the HTML
-    applyScrollMode();
   });
   document.getElementById('reader-main').scrollTo(0, 0);
   // Update prev/next button disabled state
@@ -6710,268 +6616,6 @@ function settingsLoad() {
 function settingsSave() {
   try { kvSync.setItem(PERA_SETTINGS_KEY, JSON.stringify(peraSettings)); } catch(e) {}
 }
-
-// ════════════════════════════════════════════════════
-// READING RULER
-// ════════════════════════════════════════════════════
-(function() {
-  const ruler = document.getElementById('reading-ruler');
-  if (!ruler) return;
-  document.addEventListener('mousemove', function(e) {
-    if (!peraSettings.readingRuler) return;
-    ruler.style.top = e.clientY + 'px';
-  });
-})();
-
-// ════════════════════════════════════════════════════
-// PAGE-TURN SCROLL MODE
-// ════════════════════════════════════════════════════
-let _ptPages = [], _ptPage = 0;
-
-function ptBuild() {
-  const cc = document.getElementById('chapter-content');
-  const vp = document.getElementById('page-turn-viewport');
-  const ct = document.getElementById('page-turn-content');
-  if (!cc || !vp || !ct) return;
-
-  // ── Step 1: collect sentences from chapter-content ──
-  const sentences = [];
-  Array.from(cc.children).forEach(function(el) {
-    const tag = el.tagName.toLowerCase();
-    const cls = el.className;
-    if (tag !== 'p' || el.id === 'chapter-complete-bar') {
-      sentences.push({ outerHTML: el.outerHTML, isFull: true });
-      return;
-    }
-    _splitIntoSentences(el.innerHTML).forEach(function(s) {
-      sentences.push({ text: s, tag: tag, cls: cls });
-    });
-  });
-
-  // ── Step 2: calculate available page height ──
-  const navBar = document.getElementById('page-turn-nav');
-  const navH   = navBar ? navBar.offsetHeight : 40;
-  const pageH  = vp.clientHeight - navH - 32; // 32px safety buffer
-
-  // ── Step 3: build a measurement div that exactly mirrors ct ──
-  // It lives inside vp so it inherits all the same CSS cascade,
-  // but is absolutely positioned out of flow so it doesn't shift layout.
-  // Its width matches ct exactly; its height is fixed to pageH so
-  // scrollHeight > clientHeight reliably signals overflow.
-  let meas = document.getElementById('_pt_meas');
-  if (!meas) {
-    meas = document.createElement('div');
-    meas.id = '_pt_meas';
-    vp.appendChild(meas);
-  }
-  // Copy all computed styles that affect text layout from ct
-  const ctStyle = getComputedStyle(ct);
-  meas.style.cssText = '';
-  meas.style.position    = 'absolute';
-  meas.style.top         = '-9999px';
-  meas.style.left        = '0';
-  meas.style.visibility  = 'hidden';
-  meas.style.pointerEvents = 'none';
-  meas.style.zIndex      = '-1';
-  meas.style.width       = ct.clientWidth + 'px';
-  meas.style.height      = pageH + 'px';
-  meas.style.overflow    = 'hidden';
-  meas.style.padding     = ctStyle.padding;
-  meas.style.boxSizing   = 'border-box';
-  meas.style.fontFamily  = ctStyle.fontFamily;
-  meas.style.fontSize    = ctStyle.fontSize;
-  meas.style.lineHeight  = ctStyle.lineHeight;
-  meas.style.textAlign   = ctStyle.textAlign;
-  meas.style.wordBreak   = ctStyle.wordBreak;
-
-  // ── Step 4: pack sentences into pages ──
-  _ptPages = [];
-  let pageHTML = '';
-  let curTag   = null;
-
-  function closePara() {
-    if (curTag) { pageHTML += '</' + curTag + '>'; curTag = null; }
-  }
-
-  function buildCandidate(s) {
-    if (s.isFull) {
-      return (curTag ? pageHTML + '</' + curTag + '>' : pageHTML) + s.outerHTML;
-    }
-    const open = '<' + s.tag + (s.cls ? ' class="' + s.cls + '"' : '') + '>';
-    const close = '</' + s.tag + '>';
-    if (curTag === s.tag) {
-      return pageHTML.slice(0, -close.length) + s.text + close;
-    }
-    return (curTag ? pageHTML + '</' + curTag + '>' : pageHTML) + open + s.text + close;
-  }
-
-  function fits(html) {
-    meas.innerHTML = html;
-    return meas.scrollHeight <= meas.clientHeight;
-  }
-
-  function commit(s) {
-    const open = '<' + s.tag + (s.cls ? ' class="' + s.cls + '"' : '') + '>';
-    const close = '</' + s.tag + '>';
-    if (s.isFull) {
-      closePara();
-      pageHTML += s.outerHTML;
-    } else if (curTag === s.tag) {
-      pageHTML = pageHTML.slice(0, -close.length) + s.text + close;
-    } else {
-      closePara();
-      pageHTML += open + s.text + close;
-      curTag = s.tag;
-    }
-  }
-
-  sentences.forEach(function(s) {
-    const cand = buildCandidate(s);
-    if (pageHTML === '' || fits(cand)) {
-      commit(s);
-    } else {
-      // Flush and start a new page with this sentence
-      closePara();
-      _ptPages.push(pageHTML);
-      pageHTML = '';
-      curTag = null;
-      commit(s);
-    }
-  });
-  closePara();
-  if (pageHTML.trim()) _ptPages.push(pageHTML);
-
-  _ptPage = 0;
-  ptRender();
-}
-
-// Split HTML string into sentences ending at ". " or "! " (ignores splits inside tags)
-function _splitIntoSentences(html) {
-  if (!html) return [''];
-  const results = [];
-  let cur = '';
-  let i = 0;
-  while (i < html.length) {
-    const ch = html[i];
-    if (ch === '<') {
-      // Skip entire tag
-      const end = html.indexOf('>', i);
-      cur += (end === -1 ? html.slice(i) : html.slice(i, end + 1));
-      i = end === -1 ? html.length : end + 1;
-      continue;
-    }
-    cur += ch;
-    // Sentence ends at ". " or "! " (with optional closing tags before the space)
-    if ((ch === '.' || ch === '!') && i + 1 < html.length) {
-      // Look ahead past any closing tags for a space or end
-      let j = i + 1;
-      while (j < html.length && html[j] === '<') {
-        const tagEnd = html.indexOf('>', j);
-        j = tagEnd === -1 ? html.length : tagEnd + 1;
-      }
-      if (j >= html.length || html[j] === ' ' || html[j] === '\n') {
-        // Absorb the trailing space too
-        if (j < html.length && (html[j] === ' ' || html[j] === '\n')) {
-          cur += html.slice(i + 1, j + 1);
-          i = j + 1;
-        } else {
-          i++;
-        }
-        results.push(cur);
-        cur = '';
-        continue;
-      }
-    }
-    i++;
-  }
-  if (cur.trim()) results.push(cur);
-  if (!results.length) results.push(html);
-  return results;
-}
-
-function ptRender() {
-  const ct = document.getElementById('page-turn-content');
-  const info = document.getElementById('pt-page-info');
-  if (!ct) return;
-  ct.innerHTML = _ptPages[_ptPage] || '';
-  if (info) info.textContent = 'Page ' + (_ptPage + 1) + ' of ' + _ptPages.length;
-  _ptAttachWheel();
-}
-
-function ptNavigate(dir) {
-  const np = _ptPage + dir;
-  if (np < 0 || np >= _ptPages.length) return;
-  const ct = document.getElementById('page-turn-content');
-  if (!ct) return;
-  ct.classList.add('pt-fade-out');
-  setTimeout(function() {
-    _ptPage = np;
-    ptRender();
-    ct.classList.remove('pt-fade-out');
-    ct.classList.add('pt-fade-in');
-    requestAnimationFrame(function() {
-      requestAnimationFrame(function() {
-        ct.classList.remove('pt-fade-in');
-      });
-    });
-  }, 180);
-}
-
-// Mouse wheel navigation — attached after build so viewport exists
-function _ptAttachWheel() {
-  const vp = document.getElementById('page-turn-viewport');
-  if (!vp || vp._ptWheelAttached) return;
-  vp._ptWheelAttached = true;
-  let _wheelLock = false;
-  vp.addEventListener('wheel', function(e) {
-    if (peraSettings.scrollMode !== 'page') return;
-    e.preventDefault();
-    if (_wheelLock) return;
-    _wheelLock = true;
-    ptNavigate(e.deltaY > 0 ? 1 : -1);
-    setTimeout(function() { _wheelLock = false; }, 420);
-  }, { passive: false });
-}
-
-// Keyboard navigation for page-turn mode
-document.addEventListener('keydown', function(e) {
-  if (peraSettings.scrollMode !== 'page') return;
-  if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
-  if (document.getElementById('reader-view')?.style.display !== 'block') return;
-  if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { e.preventDefault(); ptNavigate(1); }
-  if (e.key === 'ArrowLeft'  || e.key === 'ArrowUp')   { e.preventDefault(); ptNavigate(-1); }
-});
-
-function applyScrollMode() {
-  const rm = document.getElementById('reader-main');
-  const cc = document.getElementById('chapter-content');
-  const vp = document.getElementById('page-turn-viewport');
-  if (!rm || !cc || !vp) return;
-  const isPage = peraSettings.scrollMode === 'page';
-  rm.classList.toggle('page-turn-mode', isPage);
-  if (isPage) {
-    cc.style.display = 'none';
-    // Wait until the viewport has a real painted height before building pages.
-    // VS Code Live Server and some browsers need several frames after classList change.
-    _ptWaitAndBuild(0);
-  } else {
-    cc.style.display = '';
-    _ptPages = []; _ptPage = 0;
-  }
-}
-
-function _ptWaitAndBuild(attempts) {
-  const vp = document.getElementById('page-turn-viewport');
-  if (!vp) return;
-  const h = vp.clientHeight;
-  // Retry up to 40 frames (~667ms) until we get a real height
-  if (h < 100 && attempts < 40) {
-    requestAnimationFrame(function() { _ptWaitAndBuild(attempts + 1); });
-    return;
-  }
-  ptBuild();
-}
-
 const THEMES = {
   dark: {
     name: 'Dark', light: false,
@@ -7276,9 +6920,6 @@ function openSettingsOverlay() {
   document.getElementById('tog-ext-dict')?.classList.toggle('on', peraSettings.extDictEnabled);
   document.getElementById('tog-mastery-dblclick')?.classList.toggle('on', peraSettings.masteryDoubleClick);
   document.getElementById('tog-mastery-underline')?.classList.toggle('on', peraSettings.masteryUnderline);
-  document.getElementById('tog-reading-ruler')?.classList.toggle('on', peraSettings.readingRuler);
-  const smSel = document.getElementById('scroll-mode-select');
-  if (smSel) smSel.value = peraSettings.scrollMode || 'continuous';
   _updateExtDictSection();
   _updateIgnoredCsvSection();
   const themeGrid = document.getElementById('theme-grid');
@@ -8381,14 +8022,11 @@ document.addEventListener('mouseup', e => {
     return;
   }
 
-  // Only show inside chapter-content or page-turn-content
-  const content  = document.getElementById('chapter-content');
-  const ptContent = document.getElementById('page-turn-content');
-  if (!content && !ptContent) return;
+  // Only show inside chapter-content
+  const content = document.getElementById('chapter-content');
+  if (!content) return;
   const range = sel.getRangeAt(0);
-  const inReader = (content && content.contains(range.commonAncestorContainer)) ||
-                   (ptContent && ptContent.contains(range.commonAncestorContainer));
-  if (!inReader) {
+  if (!content.contains(range.commonAncestorContainer)) {
     _hideMineFloater();
     return;
   }
@@ -9227,7 +8865,7 @@ function _cancelHoverDict() {
 
 function _getWordAtPoint(el, offsetX) {
   // Only fire inside the chapter text, not on buttons/UI
-  if (!el.closest?.('#chapter-content') && !el.closest?.('#page-turn-content')) return '';
+  if (!el.closest?.('#chapter-content')) return '';
   if (el.closest?.('.pera-hl')) return ''; // already a CSV word — has its own tooltip
   if (el.tagName === 'BUTTON' || el.tagName === 'INPUT' || el.tagName === 'A') return '';
   // Use caretPositionFromPoint / caretRangeFromPoint to extract the word under cursor
@@ -9255,7 +8893,7 @@ let _hoverDictLastY = 0;
 document.addEventListener('mousemove', e => {
   if (!peraSettings.hoverDict) return;
   if (_tipPinned || _tipEditMode) return;
-  if (!e.target.closest?.('#chapter-content') && !e.target.closest?.('#page-turn-content')) { _cancelHoverDict(); return; }
+  if (!e.target.closest?.('#chapter-content')) { _cancelHoverDict(); return; }
   if (e.target.closest?.('.pera-hl')) { _cancelHoverDict(); return; } // CSV word — skip
   _hoverDictLastX = e.clientX;
   _hoverDictLastY = e.clientY;
@@ -9337,23 +8975,20 @@ function renderBadge() {
   const spans = Array.from(content.querySelectorAll('.pera-hl'));
   if (!spans.length) { removeBadge(); return; }
 
-  // Build word map using live progress — same source badgeSendToVf uses
-  const prog = vfLoadProgress();
+  // Deduplicate by word key — skip mined spans
   const seen = new Map();
   spans.forEach(s => {
     const w = s.dataset.word;
     if (!w || seen.has(w)) return;
-    if (s.dataset.si === MINED_SI) return;
+    if (s.dataset.si === MINED_SI) return; // mined phrases don't count toward badge
     const si  = parseInt(s.dataset.si, 10);
     const set = !isNaN(si) && csvSets[si] ? csvSets[si] : null;
     const ent = set ? (set.words[s.dataset.origWord] || set.words[w] || {}) : {};
-    // Use live prog level — same as badgeSendToVf does on line: prog[w]?.level ?? data.level
-    const liveLevel = prog[w]?.level ?? (parseInt(s.dataset.lv, 10) || 1);
-    seen.set(w, { level: liveLevel, ph: ent.ph||'', def: ent.def||'', si });
+    seen.set(w, { level: parseInt(s.dataset.lv, 10) || 1, ph: ent.ph||'', def: ent.def||'', si });
   });
   _badgeWordMap = seen;
 
-  // Level counts from live levels
+  // Level counts (index = level 1-5)
   const counts = [0,0,0,0,0,0];
   seen.forEach(({level:lv}) => { counts[Math.min(5, Math.max(1, lv))]++; });
   const total    = seen.size;
@@ -9478,6 +9113,7 @@ function renderBadge() {
 
   // Book stats — compute mastered count fresh from current progress so it never goes stale
   if (_bookStats) {
+    const prog = vfLoadProgress();
     let bookMastered = 0;
     _bookStats.vocabWords.forEach(w => {
       if ((prog[w]?.level ?? 1) >= 5) bookMastered++;
@@ -14366,8 +14002,6 @@ function refreshUwordsIfOpen() {
   if (peraSettings.readerWidth) { currentWidth = peraSettings.readerWidth; }
   if (peraSettings.readerAlign) { currentAlign = peraSettings.readerAlign; }
   applyTypography();
-  // Restore reading ruler
-  if (peraSettings.readingRuler) document.body.classList.add('ruler-active');
   await csvLoad();
   renderCsvChips();
   vfContextLoad(); // restore context sentences from previous sessions
@@ -14387,9 +14021,6 @@ function refreshUwordsIfOpen() {
   else if (document.getElementById('panel-archive')?.classList.contains('active')) renderArchive();
 })();
 </script>
-
-<!-- ════════════ READING RULER ════════════ -->
-<div id="reading-ruler"></div>
 
 <!-- ════════════ HOVER DEFINITION TOOLTIP ════════════ -->
 <div id="hover-def-tip">
@@ -14566,32 +14197,6 @@ function refreshUwordsIfOpen() {
           <div class="sov-row-sub">Upload a CSV of words to suppress from highlighting and Unique Words</div>
         </div>
         <div class="pera-tog" id="tog-ignored-csv"><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
-      </div>
-      <div class="sov-row">
-        <div>
-          <div class="sov-row-label">Reading Ruler</div>
-          <div class="sov-row-sub">Highlights a guide line that follows your cursor to help track your place on the page</div>
-        </div>
-        <div class="pera-tog" id="tog-reading-ruler" onclick="
-          peraSettings.readingRuler = !peraSettings.readingRuler;
-          this.classList.toggle('on', peraSettings.readingRuler);
-          document.body.classList.toggle('ruler-active', peraSettings.readingRuler);
-          settingsSave();
-        "><div class="pera-tog-track"><div class="pera-tog-thumb"></div></div></div>
-      </div>
-      <div class="sov-row">
-        <div>
-          <div class="sov-row-label">Scroll Mode</div>
-          <div class="sov-row-sub">Continuous scrolls the full chapter freely; Page-turn breaks content into screen-sized pages</div>
-        </div>
-        <select class="sov-lang-select" id="scroll-mode-select" onchange="
-          peraSettings.scrollMode = this.value;
-          settingsSave();
-          applyScrollMode();
-        ">
-          <option value="continuous">Continuous</option>
-          <option value="page">Page-turn</option>
-        </select>
       </div>
     </div>
 
