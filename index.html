@@ -5749,11 +5749,13 @@ function loadChapter(idx) {
     _htmlParts.shift();
   }
   const cleanHtml = _htmlParts.join('\n');
-  document.getElementById('chapter-content').innerHTML =
-    `<h2 class="chapter-heading">${esc(ch.title)}</h2>\n` + cleanHtml +
+  const _fullChapterHtml = `<h2 class="chapter-heading">${esc(ch.title)}</h2>\n` + cleanHtml +
     `\n<div id="chapter-complete-bar" class="chapter-complete-bar">
       <button class="chapter-complete-btn" onclick="showSessionStats()">✓ Chapter Completed</button>
     </div>`;
+  // Store clean HTML so applyHighlights can reset without unwrapping spans one-by-one
+  applyHighlights._cleanHtml = _fullChapterHtml;
+  document.getElementById('chapter-content').innerHTML = _fullChapterHtml;
   document.getElementById('topbar-title').innerHTML = `<strong>${esc(ch.title)}</strong>`;
   document.querySelectorAll('.chapter-item').forEach((el, i) => el.classList.toggle('active', i === idx));
   requestAnimationFrame(() => {
@@ -6505,20 +6507,32 @@ function applyHighlights() {
     });
   } catch(_e) {}
 
-  // Remove existing highlights — restore plain text nodes
-  content.querySelectorAll('.pera-hl').forEach(span => {
-    const parent = span.parentNode;
-    if (!parent) return;
-    const clone = span.cloneNode(true);
-    clone.querySelectorAll('rt').forEach(rt => rt.remove());
-    span.replaceWith(document.createTextNode(clone.textContent));
-  });
-  // Normalize text nodes after unwrapping
-  content.normalize();
+  // Remove existing highlights — reset from stored clean chapter HTML (single DOM op, much faster)
+  if (content.querySelector('.pera-hl')) {
+    const ch = chapters[currentChap];
+    if (ch && applyHighlights._cleanHtml != null) {
+      content.innerHTML = applyHighlights._cleanHtml;
+    } else {
+      // Fallback: unwrap spans individually
+      content.querySelectorAll('.pera-hl').forEach(span => {
+        const parent = span.parentNode;
+        if (!parent) return;
+        const clone = span.cloneNode(true);
+        clone.querySelectorAll('rt').forEach(rt => rt.remove());
+        span.replaceWith(document.createTextNode(clone.textContent));
+      });
+      content.normalize();
+    }
+  }
 
   if (!csvSets.length) return;
   _buildHlTrie();
   // Accumulate occurrence counts across chapters (don't clear — needed for Hide Common filter)
+
+  // Hoist storage reads: parse localStorage once per applyHighlights call, not once per span
+  const _ignoreSet     = _hlIgnoreLoad();
+  const _ignoredCsvSet = peraSettings.ignoredCsv ? ignoredCsvLoad() : new Set();
+  const _focusSet      = new Set(_hlFocusLoad().map(e => e.word));
 
   const SKIP = new Set(['SCRIPT','STYLE','CODE','PRE','KBD','SAMP','VAR','TEXTAREA','INPUT','SELECT']);
 
@@ -6535,8 +6549,8 @@ function applyHighlights() {
 
         const isMined = h.si === MINED_SI;
         const span = document.createElement('span');
-        const _isHlIgnored = !isMined && (_hlIsIgnored(h.word) || ignoredCsvHas(h.word));
-        const _isHlFocused = !isMined && _hlIsFocused(h.word);
+        const _isHlIgnored = !isMined && (_ignoreSet.has(h.word) || _ignoredCsvSet.has(h.word));
+        const _isHlFocused = !isMined && _focusSet.has(h.word);
         span.className = 'pera-hl' + (isMined ? ' mined' : '') + (_isHlIgnored ? ' hl-ignored' : '') + (_isHlFocused ? ' focused' : '');
         span.dataset.word = h.word;
         span.dataset.origWord = h.origWord;
@@ -6604,6 +6618,44 @@ function applyHighlights() {
   if (peraSettings.csActive) setTimeout(csApplyHighlights, 10);
   // Re-apply note indicators (blue dots on noted words)
   if (typeof _applyAllNoteIndicators === 'function') setTimeout(_applyAllNoteIndicators, 50);
+}
+
+// ── Fast-path: update only spans matching a word (no full DOM re-render) ──
+// Used by ignore/unignore and focus/unfocus to avoid the expensive full rebuild.
+function _applyHighlightFast(wordKey) {
+  const wl = wordKey.toLowerCase();
+  const content = document.getElementById('chapter-content');
+  if (!content) return;
+  const isIgnored = _hlIsIgnored(wl) || ignoredCsvHas(wl);
+  const isFocused = _hlIsFocused(wl);
+  content.querySelectorAll('.pera-hl').forEach(span => {
+    const sw = (span.dataset.origWord || span.dataset.word || '').toLowerCase();
+    if (sw !== wl) return;
+    if (isIgnored) {
+      span.classList.add('hl-ignored');
+    } else {
+      span.classList.remove('hl-ignored');
+    }
+    if (isFocused) {
+      span.classList.add('focused');
+    } else {
+      span.classList.remove('focused');
+    }
+  });
+  // Debounced badge render
+  clearTimeout(applyHighlights._badgeTimer);
+  applyHighlights._badgeTimer = setTimeout(renderBadge, 300);
+  refreshUwordsIfOpen();
+}
+
+// ── Fast-path: add mined spans for a newly mined word without full re-render ──
+function _applyMinedWordFast(phrase) {
+  // Full rebuild needed only for mined words since new spans must be inserted.
+  // But we avoid it when the trie is still valid by doing a targeted re-render.
+  // For simplicity, still call applyHighlights but skip the badge/uwords debounce
+  // (they're already scheduled). This is kept as a hook for future optimisation.
+  _hlTrie = null;
+  applyHighlights();
 }
 
 // ── Tooltip ────────────────────────────────────────
@@ -7717,9 +7769,8 @@ function _buildTipContent(span, set, entry, lv, wordKey) {
         hlToast(`✕ "${_ignWord}" ignored`);
         _hideTip();
       }
-      // Re-apply highlights to reflect change across all spans
-      _hlTrie = null;
-      applyHighlights();
+      // Fast path: only update spans for this word, no full DOM re-render
+      _applyHighlightFast(_ignWord);
     });
   }
 
@@ -7740,7 +7791,8 @@ function _buildTipContent(span, set, entry, lv, wordKey) {
         _focusBtn.classList.add('active');
         hlToast(`★ "${_focusWord}" added to Focus`);
       }
-      applyHighlights();
+      // Fast path: only update spans for this word, no full DOM re-render
+      _applyHighlightFast(_focusWord);
       if (document.getElementById('mv-panel-focus')?.classList.contains('active')) mvRenderFocus();
     });
   }
