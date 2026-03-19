@@ -6535,8 +6535,8 @@ function applyHighlightsImpl() {
   // Remove existing highlights — restore plain text nodes.
   // IMPORTANT: if a pera-cs (connected-speech) span is nested inside a pera-hl
   // span, its textContent is the *connected form* (e.g. "tha'"), not the original
-  // word (e.g. "that"). We must restore the original text first, otherwise
-  // clone.textContent returns the wrong string and the word gets doubled
+  // word (e.g. "that"). Restore nested CS spans to their original text first so
+  // clone.textContent gives back the true original word, preventing doubling bugs
   // (e.g. "thattha'") when csApplyHighlights runs again afterwards.
   content.querySelectorAll('.pera-hl').forEach(span => {
     const parent = span.parentNode;
@@ -11652,14 +11652,6 @@ function csApplyHighlights() {
           if (rn === endTop) { inR = false; break; }
         }
         if (!rangeNodes.length) continue;
-
-        // Guard: skip this match if it would swallow a pera-hl (vocabulary)
-        // span. Removing those nodes destroys their highlight styling.
-        var _crossesHl = rangeNodes.some(function(n) {
-          return n.nodeType === Node.ELEMENT_NODE &&
-                 n.classList && n.classList.contains('pera-hl');
-        });
-        if (_crossesHl) continue;
 
         // Guard: only slice nodeValue on actual text nodes to avoid null.slice()
         var beforeText2 = '';
