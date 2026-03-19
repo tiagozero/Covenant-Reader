@@ -11684,7 +11684,61 @@ function csApplyHighlights() {
 
         var frag2 = document.createDocumentFragment();
         if (beforeText2) frag2.appendChild(document.createTextNode(beforeText2));
+
+        // If startTop is an element node (e.g. a pera-hl span), the match starts
+        // somewhere inside its text.  Re-insert startTop so its visible content
+        // (e.g. a highlighted vocabulary word) is not lost, then trim its text to
+        // only the portion that precedes the match start offset.
+        if (startTop.nodeType !== Node.TEXT_NODE) {
+          var stText = startTop.textContent || '';
+          // How many characters into startTop does the match begin?
+          // startInfo.offset is the offset within the leaf text node inside startTop.
+          // Walk up from startInfo.node to find accumulated offset inside startTop.
+          var accBefore = 0;
+          (function countBefore(n) {
+            if (n === startTop) return;
+            var p = n.parentNode;
+            for (var i = 0; i < p.childNodes.length; i++) {
+              var sib = p.childNodes[i];
+              if (sib === n) break;
+              accBefore += (sib.textContent || '').length;
+            }
+            if (p !== startTop) countBefore(p);
+          })(startInfo.node);
+          var matchOffsetInStart = accBefore + startInfo.offset;
+          if (matchOffsetInStart > 0) {
+            // There is pre-match content inside startTop — clone it and keep only
+            // the characters before the match so the element stays in the DOM.
+            var preClone = startTop.cloneNode(true);
+            preClone.textContent = stText.slice(0, matchOffsetInStart);
+            frag2.appendChild(preClone);
+          }
+        }
+
         frag2.appendChild(span2);
+
+        // Similarly, if endTop is an element, re-insert its post-match content.
+        if (endTop.nodeType !== Node.TEXT_NODE) {
+          var etText = endTop.textContent || '';
+          var accAfter = 0;
+          (function countAfter(n) {
+            if (n === endTop) return;
+            var p = n.parentNode;
+            for (var i = 0; i < p.childNodes.length; i++) {
+              var sib2 = p.childNodes[i];
+              if (sib2 === n) break;
+              accAfter += (sib2.textContent || '').length;
+            }
+            if (p !== endTop) countAfter(p);
+          })(endInfo.node);
+          var matchEndOffsetInEnd = accAfter + endInfo.offset + 1;
+          if (matchEndOffsetInEnd < etText.length) {
+            var postClone = endTop.cloneNode(true);
+            postClone.textContent = etText.slice(matchEndOffsetInEnd);
+            frag2.appendChild(postClone);
+          }
+        }
+
         if (afterText2)  frag2.appendChild(document.createTextNode(afterText2));
 
         block.insertBefore(frag2, rangeNodes[0]);
