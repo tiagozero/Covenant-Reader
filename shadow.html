@@ -75,7 +75,48 @@ html.dark{
 .lib-del{width:32px;height:32px;border-radius:6px;border:none;background:none;cursor:pointer;color:var(--tx3);display:flex;align-items:center;justify-content:center;font-size:15px;transition:all .12s;flex-shrink:0;}
 .lib-del:hover{background:var(--red-l);color:var(--red);}
 
-/* SETTINGS / RULES UI */
+/* HOME CLIPS */
+.hv-clips-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:18px;flex-wrap:wrap;gap:10px;}
+
+/* Lesson folders grid */
+.hvc-lessons-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(190px,1fr));gap:14px;}
+.hvc-lesson-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:12px;
+  padding:18px 16px;cursor:pointer;transition:all .16s;box-shadow:var(--sh);
+  display:flex;flex-direction:column;gap:6px;
+}
+.hvc-lesson-card:hover{border-color:var(--pri-d);box-shadow:var(--sh2);transform:translateY(-2px);}
+.hvc-lesson-icon{
+  width:48px;height:48px;border-radius:12px;background:var(--pri-l);
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+  margin-bottom:6px;border:1px solid var(--border);
+}
+.hvc-lesson-name{font-size:14px;font-weight:600;color:var(--tx);overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.hvc-lesson-count{font-size:12px;color:var(--pri);font-weight:600;}
+.hvc-lesson-thumb{display:flex;gap:4px;margin-top:4px;flex-wrap:wrap;}
+.hvc-thumb{
+  font-size:9px;background:var(--s2);border:1px solid var(--border);
+  border-radius:4px;padding:2px 6px;color:var(--tx3);
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:120px;
+}
+
+/* Clips detail grid */
+.hvc-clips-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:14px;}
+.hvc-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:10px;
+  padding:14px;transition:border-color .15s,box-shadow .15s;box-shadow:var(--sh);
+  display:flex;flex-direction:column;gap:8px;
+}
+.hvc-card:hover{border-color:var(--border2);box-shadow:var(--sh2);}
+.hvc-top{display:flex;align-items:flex-start;gap:8px;}
+.hvc-icon{width:34px;height:34px;border-radius:7px;background:var(--s2);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.hvc-info{flex:1;min-width:0;}
+.hvc-name{font-size:13px;font-weight:600;color:var(--tx);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.hvc-preview{font-size:11px;color:var(--tx2);font-style:italic;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.hvc-meta{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tx3);}
+.hvc-actions{display:flex;gap:5px;flex-wrap:wrap;}
+
+/* SETTINGS PANE */
 .st-box{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:20px;margin-bottom:20px;box-shadow:var(--sh);}
 .st-h{font-size:15px;font-weight:600;margin-bottom:12px;}
 
@@ -124,11 +165,17 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
 .ib:hover{background:var(--s2);color:var(--tx2)}
 .ib.on{color:var(--pri);background:var(--pri-l)}
 
-/* TABS */
-.tabs{display:flex;border-bottom:1px solid var(--border);flex-shrink:0}
-.tab{flex:1;padding:9px 4px;text-align:center;font-size:11px;font-weight:500;cursor:pointer;border-bottom:2px solid transparent;color:var(--tx3);transition:color .12s,border-color .12s;user-select:none}
-.tab:hover{color:var(--tx2)}
-.tab.on{color:var(--pri);border-bottom-color:var(--pri)}
+/* TABS — sidebar two-row layout */
+.tabs{display:grid;grid-template-columns:1fr 1fr;flex-shrink:0;border-bottom:1px solid var(--border);}
+.tabs-row2{display:grid;grid-template-columns:1fr 1fr 1fr;flex-shrink:0;border-bottom:1px solid var(--border);}
+.tab{
+  padding:7px 3px;text-align:center;font-size:11px;font-weight:500;cursor:pointer;
+  color:var(--tx3);transition:color .12s,background .12s;user-select:none;
+  white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  border-bottom:2px solid transparent;position:relative;
+}
+.tab:hover{color:var(--tx2);background:var(--s2);}
+.tab.on{color:var(--pri);border-bottom-color:var(--pri);background:var(--pri-l);}
 
 /* SENT LIST */
 #sent-list{flex:1;overflow-y:auto;min-height:0}
@@ -150,6 +197,30 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
 .ms-btn:hover{background:rgba(255,255,255,.22)}
 .ms-btn.ghost{background:transparent;color:rgba(255,255,255,.5);border-color:rgba(255,255,255,.15)}
 .ms-btn.hi{background:rgba(79,70,229,.4);border-color:rgba(79,70,229,.7);}
+.ms-btn.grn{background:rgba(5,150,105,.4);border-color:rgba(5,150,105,.7);}
+
+/* CHAPTERS */
+.ch-item{display:flex;align-items:center;gap:6px;padding:6px 10px;cursor:pointer;border-left:3px solid transparent;transition:background .1s,border-color .1s;position:relative;}
+.ch-item:hover{background:var(--s2)}
+.ch-item.active{background:var(--pri-l);border-left-color:var(--pri)}
+.ch-num{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tx3);min-width:20px;user-select:none;}
+.ch-title{font-size:12px;color:var(--tx2);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.ch-item.active .ch-title{color:var(--pri);font-weight:600;}
+.ch-meta{font-size:10px;color:var(--tx3);white-space:nowrap;}
+.ch-add-btn{margin:8px;display:flex;gap:6px;flex-shrink:0;}
+
+/* CLIPS */
+#clips-pane{flex:1;display:flex;flex-direction:column;overflow:hidden;min-height:0;}
+.clip-list{flex:1;overflow-y:auto;min-height:0;padding:6px;}
+.clip-item{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:9px 10px;margin-bottom:6px;transition:border-color .12s;}
+.clip-item:hover{border-color:var(--border2);}
+.clip-hd{display:flex;align-items:center;gap:6px;margin-bottom:4px;}
+.clip-icon{font-size:14px;flex-shrink:0;}
+.clip-name{font-size:12px;font-weight:600;color:var(--tx);flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+.clip-sents{font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tx3);flex-shrink:0;}
+.clip-preview{font-size:11px;color:var(--tx2);font-style:italic;line-height:1.4;margin-bottom:6px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;}
+.clip-actions{display:flex;gap:4px;flex-wrap:wrap;}
+.clip-add-bar{padding:8px;border-top:1px solid var(--border);flex-shrink:0;}
 
 /* RULES & RECORDINGS TAB UI */
 #rules-pane, #recordings-pane{flex:1;display:flex;flex-direction:column;overflow-y:auto;min-height:0;padding:8px}
@@ -305,6 +376,7 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
     
     <div class="hv-tabs">
       <div class="hv-tab on" id="htab-lib" onclick="switchHomeTab('library')">Library</div>
+      <div class="hv-tab" id="htab-clips" onclick="switchHomeTab('clips')">Clips</div>
       <div class="hv-tab" id="htab-rules" onclick="switchHomeTab('rules')">Rules</div>
       <div class="hv-tab" id="htab-settings" onclick="switchHomeTab('settings')">Settings</div>
     </div>
@@ -322,6 +394,35 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
         </div>
       </div>
       <div class="lib-list" id="lib-list"></div>
+    </div>
+
+    <!-- HOME CLIPS PANE -->
+    <div class="hv-pane" id="hp-clips">
+      <!-- Level 1: lesson folders -->
+      <div id="hvc-lessons-view">
+        <div class="hv-clips-header">
+          <div class="lib-title">Clips</div>
+          <div style="display:flex;align-items:center;gap:10px;">
+            <span id="hvc-stats" style="font-size:12px;color:var(--tx3);"></span>
+            <div style="position:relative;">
+              <span style="position:absolute;left:10px;top:50%;transform:translateY(-50%);font-size:13px;color:var(--tx3);pointer-events:none;">🔍</span>
+              <input type="text" id="hvc-search" class="fi" placeholder="Search lessons…" oninput="renderHomeClips()" style="width:200px;padding-left:30px;">
+            </div>
+          </div>
+        </div>
+        <div class="hvc-lessons-grid" id="hvc-lessons-grid"></div>
+      </div>
+      <!-- Level 2: clips inside a lesson -->
+      <div id="hvc-detail-view" style="display:none;">
+        <div class="hv-clips-header">
+          <div style="display:flex;align-items:center;gap:10px;">
+            <button class="btn" onclick="hvcBack()" style="font-size:13px;">‹ Back</button>
+            <div class="lib-title" id="hvc-detail-title">Lesson Name</div>
+          </div>
+          <span id="hvc-detail-stats" style="font-size:12px;color:var(--tx3);"></span>
+        </div>
+        <div class="hvc-clips-grid" id="hvc-grid"></div>
+      </div>
     </div>
 
     <!-- RULES PANE -->
@@ -508,12 +609,34 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
           <button class="ib" id="ib-msel" title="Multi-select (M)" onclick="toggleMSel()">☑</button>
         </div>
       </div>
+      <!-- Sidebar tab row 1 -->
       <div class="tabs">
+        <div class="tab" id="tab-chapters" onclick="showTab('chapters')">Chapters</div>
         <div class="tab on" id="tab-sents" onclick="showTab('sents')">Sentences</div>
+      </div>
+      <!-- Sidebar tab row 2 -->
+      <div class="tabs-row2">
+        <div class="tab" id="tab-clips" onclick="showTab('clips')">Clips</div>
         <div class="tab" id="tab-rules" onclick="showTab('rules')">Rules</div>
-        <div class="tab" id="tab-recordings" onclick="showTab('recordings')">Recordings</div>
+        <div class="tab" id="tab-recordings" onclick="showTab('recordings')">Rec.</div>
       </div>
       
+      <!-- CHAPTERS PANE -->
+      <div id="chapters-pane" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
+        <div id="chapter-list" style="flex:1;overflow-y:auto;min-height:0;"></div>
+        <div class="ch-add-btn">
+          <button class="btn pri" style="flex:1;font-size:11px;" onclick="openAddChapterModal()">+ Add Chapter</button>
+        </div>
+      </div>
+
+      <!-- CLIPS PANE -->
+      <div id="clips-pane" style="display:none;flex-direction:column;flex:1;overflow:hidden;min-height:0;">
+        <div class="clip-list" id="clip-list"></div>
+        <div class="clip-add-bar" style="display:none;" id="clip-add-bar">
+          <button class="btn pri" style="width:100%;font-size:11px;justify-content:center;" onclick="saveClipFromSel()">✂ Save Clip from Selection</button>
+        </div>
+      </div>
+
       <div id="sents-pane" style="display:flex;flex-direction:column;flex:1;overflow:hidden;min-height:0">
         <div id="sent-list"></div>
         <div id="ms-bar">
@@ -525,6 +648,7 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
             📁 Upload
             <input type="file" accept="audio/*" style="display:none" onchange="uploadRecForSel(this, this.files[0])">
           </label>
+          <button class="ms-btn grn" onclick="saveClipFromSel()">✂ Save Clip</button>
           <button class="ms-btn ghost" onclick="clearSel()">✕ Clear</button>
         </div>
       </div>
@@ -614,6 +738,9 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
   <div id="countdown-num">3</div>
   <div id="countdown-label">Get ready to shadow…</div>
 </div>
+
+<!-- TOAST -->
+<div id="toast" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%) translateY(20px);background:#18181B;color:#fff;padding:8px 16px;border-radius:20px;font-size:12px;font-weight:500;font-family:'DM Sans',sans-serif;z-index:1200;opacity:0;transition:opacity .2s,transform .2s;pointer-events:none;white-space:nowrap;box-shadow:0 4px 16px rgba(0,0,0,.3);"></div>
 
 <!-- Selection tooltip -->
 <div id="sel-tt">
@@ -770,6 +897,39 @@ kbd{background:var(--s2);border:1px solid var(--border);border-radius:3px;paddin
   </div>
 </div>
 
+<!-- Add/Edit Chapter Modal -->
+<div class="bd" id="m-chapter">
+  <div class="modal" style="width:480px;">
+    <div class="modal-h" id="chapter-modal-title">Add Chapter</div>
+    <input type="hidden" id="chapter-edit-id">
+    <div class="fg"><label class="fl">Chapter Title</label><input id="ch-name" class="fi" placeholder="e.g. Chapter 1 — Greetings"></div>
+    <div class="fg">
+      <label class="fl">Audio / Video File</label>
+      <label class="uz" id="ch-av-zone">
+        <input id="ch-av-inp" type="file" accept="audio/*,video/*" onchange="onChAVFile(this.files[0])">
+        <div class="uz-ico" id="ch-av-ico">🎵</div>
+        <div class="uz-t">Click or drag audio / video</div>
+        <div class="uz-s">MP3 · MP4 · WAV · WEBM · M4A · OGG…</div>
+      </label>
+      <div id="ch-av-badge"></div>
+    </div>
+    <div class="fg" style="margin-bottom:0">
+      <label class="fl">Subtitles — SRT or VTT <span style="font-weight:400;text-transform:none;letter-spacing:0">(optional)</span></label>
+      <label class="uz" id="ch-srt-zone">
+        <input id="ch-srt-inp" type="file" accept=".srt,.vtt,.txt" onchange="onChSRTFile(this.files[0])">
+        <div class="uz-ico" id="ch-srt-ico">📝</div>
+        <div class="uz-t">Click or drag .srt or .vtt</div>
+        <div class="uz-s">Enables sentence navigation for this chapter</div>
+      </label>
+      <div id="ch-srt-badge"></div>
+    </div>
+    <div class="modal-ft">
+      <button class="btn" onclick="closeM('m-chapter')">Cancel</button>
+      <button class="btn pri" onclick="saveChapter()">Save Chapter</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════
 //  UTILS
@@ -801,6 +961,14 @@ function hexToRgba(hex, alpha) {
   return `rgba(${r},${g},${b},${alpha})`;
 }
 function sleep(ms){return new Promise(r=>setTimeout(r,ms))}
+let _clipAudio=null, _clipPlayingId=null, _toastTimer=null;
+function showToast(msg,dur=2200){
+  const t=$('toast');if(!t)return;
+  t.textContent=msg;
+  t.style.opacity='1';t.style.transform='translateX(-50%) translateY(0)';
+  if(_toastTimer)clearTimeout(_toastTimer);
+  _toastTimer=setTimeout(()=>{t.style.opacity='0';t.style.transform='translateX(-50%) translateY(20px)';},dur);
+}
 
 // Subtitle parsers
 function parseSRT(raw){
@@ -1111,13 +1279,17 @@ function showPlayer(){
 
 function switchHomeTab(tab){
   const isLib = tab==='lib'||tab==='library';
+  const isClips = tab==='clips';
   $('htab-lib').classList.toggle('on', isLib);
+  $('htab-clips').classList.toggle('on', isClips);
   $('htab-rules').classList.toggle('on', tab==='rules');
   $('htab-settings').classList.toggle('on', tab==='settings');
   $('hp-lib').classList.toggle('on', isLib);
+  $('hp-clips').classList.toggle('on', isClips);
   $('hp-rules').classList.toggle('on', tab==='rules');
   $('hp-settings').classList.toggle('on', tab==='settings');
   if(isLib) renderLibrary();
+  else if(isClips){_hvcOpenLessonId=null;renderHomeClips();}
   else if(tab==='rules'){updRuleTypesList();updRuleTypeFilter();$('rt-colorize').checked=hlColors;renderAllRules();}
   else if(tab==='settings') applyCountdownSetting();
 }
@@ -1139,7 +1311,7 @@ async function renderLibrary(){
         <div class="lib-icon">${l.isVid?'🎬':'🎵'}</div>
         <div class="lib-info">
           <div class="lib-name">${esc(l.name)}</div>
-          <div class="lib-meta">${l.subtitles?.length||0} sentences · ${new Date(l.createdAt).toLocaleDateString()}</div>
+          <div class="lib-meta">${l.subtitles?.length||0} sentences${l.chapters?.length?` · ${l.chapters.length} chapter${l.chapters.length!==1?'s':''}`:''} ${l.clips?.length?`· ${l.clips.length} clip${l.clips.length!==1?'s':''}`:''} · ${new Date(l.createdAt).toLocaleDateString()}</div>
           ${l.tags&&l.tags.length?`<div class="lib-tags">${l.tags.map(t=>`<span class="ltag">${esc(t)}</span>`).join('')}</div>`:''}
         </div>
         <button class="lib-del" onclick="event.stopPropagation();delSaved(${l.id})" title="Delete">🗑</button>
@@ -1148,8 +1320,251 @@ async function renderLibrary(){
 }
 
 // ═══════════════════════════════════════════
-//  RULE TYPES & GLOBALS
+//  HOME CLIPS PAGE  (lesson-grouped, two-level)
 // ═══════════════════════════════════════════
+let _hvcAllLessons = [];
+let _hvcAllClips   = [];
+let _hvcOpenLessonId = null;
+let _hvcAudio=null, _hvcPlayingId=null;
+
+async function renderHomeClips(){
+  // Stop any playing audio
+  if(_hvcAudio){_hvcAudio.pause();_hvcAudio=null;_hvcPlayingId=null;}
+
+  // Always reload from DB for freshness
+  try{
+    const all = await DB.all();
+    _hvcAllLessons = all.filter(l=>l.clips?.length);
+    _hvcAllClips = [];
+    _hvcAllLessons.forEach(l=>{
+      l.clips.forEach(clip=>_hvcAllClips.push({clip,lesson:l}));
+    });
+  }catch(e){console.error('renderHomeClips load',e);}
+
+  if(_hvcOpenLessonId !== null){
+    _hvcShowDetail(_hvcOpenLessonId);
+  } else {
+    _hvcShowLessons();
+  }
+}
+
+function _hvcShowLessons(){
+  const grid=$('hvc-lessons-grid');
+  const stats=$('hvc-stats');
+  const lv=$('hvc-lessons-view');
+  const dv=$('hvc-detail-view');
+  if(!grid)return;
+  if(lv) lv.style.display='block';
+  if(dv) dv.style.display='none';
+
+  const q=($('hvc-search')?.value||'').toLowerCase().trim();
+  let lessons=_hvcAllLessons;
+  if(q) lessons=lessons.filter(l=>l.name.toLowerCase().includes(q));
+
+  const totalClips=lessons.reduce((s,l)=>s+(l.clips?.length||0),0);
+  if(stats) stats.textContent=`${lessons.length} lesson${lessons.length!==1?'s':''} · ${totalClips} clip${totalClips!==1?'s':''}`;
+
+  if(!lessons.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:48px;text-align:center;border:1px dashed var(--border);border-radius:10px;font-size:13px;color:var(--tx3);">${
+      _hvcAllLessons.length?'No lessons match your search.':'No clips yet.<br>Open a lesson, select sentences and click <strong>✂ Save Clip</strong>.'
+    }</div>`;
+    return;
+  }
+
+  grid.innerHTML = lessons.map(l=>{
+    const clips = l.clips||[];
+    const thumbs = clips.slice(0,3).map(c=>`<span class="hvc-thumb">${esc(c.name)}</span>`).join('');
+    const more = clips.length>3?`<span class="hvc-thumb">+${clips.length-3} more</span>`:'';
+    return `
+    <div class="hvc-lesson-card" onclick="hvcOpenFolder(${l.id})">
+      <div class="hvc-lesson-icon">${l.isVid?'🎬':'🎵'}</div>
+      <div class="hvc-lesson-name" title="${esc(l.name)}">${esc(l.name)}</div>
+      <div class="hvc-lesson-count">${clips.length} clip${clips.length!==1?'s':''}</div>
+      <div class="hvc-lesson-thumb">${thumbs}${more}</div>
+    </div>`;
+  }).join('');
+}
+
+function hvcOpenFolder(lessonId){
+  _hvcOpenLessonId = lessonId;
+  _hvcShowDetail(lessonId);
+}
+
+function hvcBack(){
+  _hvcOpenLessonId = null;
+  _hvcShowLessons();
+}
+
+function _hvcShowDetail(lessonId){
+  const lesson=_hvcAllLessons.find(l=>l.id===lessonId);
+  const grid=$('hvc-grid');
+  const title=$('hvc-detail-title');
+  const dstats=$('hvc-detail-stats');
+  const lv=$('hvc-lessons-view');
+  const dv=$('hvc-detail-view');
+  if(!grid)return;
+  if(lv) lv.style.display='none';
+  if(dv) dv.style.display='block';
+
+  if(!lesson){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:40px;text-align:center;font-size:13px;color:var(--tx3);">Lesson not found.</div>`;
+    return;
+  }
+
+  if(title) title.textContent=lesson.name;
+  const clips=lesson.clips||[];
+  if(dstats) dstats.textContent=`${clips.length} clip${clips.length!==1?'s':''}`;
+
+  if(!clips.length){
+    grid.innerHTML=`<div style="grid-column:1/-1;padding:48px;text-align:center;border:1px dashed var(--border);border-radius:10px;font-size:13px;color:var(--tx3);">No clips in this lesson yet.</div>`;
+    return;
+  }
+
+  grid.innerHTML=[...clips].sort((a,b)=>b.createdAt-a.createdAt).map(clip=>`
+    <div class="hvc-card" id="hvccard-${clip.id}">
+      <div class="hvc-top">
+        <div class="hvc-icon">${clip.isVid?'🎬':'🎵'}</div>
+        <div class="hvc-info">
+          <div class="hvc-name" title="${esc(clip.name)}">${esc(clip.name)}</div>
+          <div class="hvc-meta">${fmtM(clip.startTime)} → ${fmtM(clip.endTime)} · ${clip.sentCount} sent${clip.sentCount!==1?'s':''}</div>
+        </div>
+        <button class="ib" onclick="hvcDeleteClip(${lesson.id},'${clip.id}')" style="width:20px;height:20px;font-size:11px;flex-shrink:0;color:var(--tx3);"
+          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--tx3)'" title="Delete">✕</button>
+      </div>
+      ${clip.preview?`<div class="hvc-preview">"${esc(clip.preview)}"</div>`:''}
+      <div class="hvc-meta" style="color:var(--tx3);">${new Date(clip.createdAt).toLocaleDateString()}</div>
+      <div class="hvc-actions">
+        <button class="sm" id="hvc-play-${clip.id}" onclick="hvcPlayClip('${clip.id}',${lesson.id})">▶ Play</button>
+        <button class="sm" onclick="hvcOpenLesson(${lesson.id},'${clip.id}')">↗ Open</button>
+        <button class="sm" id="hvc-dl-${clip.id}" onclick="hvcDownloadClip('${clip.id}',${lesson.id})">⬇ Audio</button>
+        <button class="sm" onclick="hvcDownloadSRT('${clip.id}',${lesson.id})">⬇ SRT</button>
+      </div>
+    </div>`).join('');
+}
+
+function hvcPlayClip(clipId, lessonId){
+  const entry=_hvcAllClips.find(x=>x.clip.id===clipId&&x.lesson.id===lessonId);
+  if(!entry)return;
+  const clip=entry.clip;
+  if(_hvcPlayingId===clipId && _hvcAudio && !_hvcAudio.paused){
+    _hvcAudio.pause();_hvcAudio=null;_hvcPlayingId=null;
+    _hvcUpdBtn(clipId,'▶ Play');return;
+  }
+  if(_hvcAudio){_hvcAudio.pause();_hvcAudio=null;}
+  if(_hvcPlayingId) _hvcUpdBtn(_hvcPlayingId,'▶ Play');
+  if(!clip.audioData){hvcOpenLesson(lessonId,clipId);return;}
+  const blob=new Blob([clip.audioData],{type:clip.audioType||'audio/wav'});
+  _hvcAudio=new Audio(URL.createObjectURL(blob));
+  _hvcPlayingId=clipId;
+  _hvcUpdBtn(clipId,'⏸ Stop');
+  _hvcAudio.play();
+  _hvcAudio.onended=()=>{_hvcPlayingId=null;_hvcAudio=null;_hvcUpdBtn(clipId,'▶ Play');};
+  _hvcAudio.onerror=()=>{_hvcPlayingId=null;_hvcAudio=null;_hvcUpdBtn(clipId,'▶ Play');};
+}
+
+function _hvcUpdBtn(id, label){
+  const btn=document.getElementById('hvc-play-'+id);
+  if(btn) btn.textContent=label;
+}
+
+async function hvcDownloadClip(clipId, lessonId){
+  const entry=_hvcAllClips.find(x=>x.clip.id===clipId&&x.lesson.id===lessonId);
+  if(!entry)return;
+  const {clip,lesson}=entry;
+  const btn=document.getElementById('hvc-dl-'+clipId);
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+  try{
+    if(clip.audioData){
+      const blob=new Blob([clip.audioData],{type:clip.audioType||'audio/wav'});
+      _dlBlob(blob,`${_hvcFilename(clip,lesson)}.wav`);
+    }else{
+      const fullLesson=await DB.get(lessonId);
+      if(!fullLesson){showToast('⚠ Lesson not found');return;}
+      const mediaData=fullLesson.isVid?fullLesson.videoData:fullLesson.audioData;
+      if(!mediaData){showToast('⚠ No media in lesson');return;}
+      const subs=(clip.sentIndices||[]).map(i=>(fullLesson.subtitles||[])[i]).filter(Boolean);
+      const wavBlob=subs.length
+        ?await _extractAudioSents(mediaData,subs)
+        :await _extractAudioRange(mediaData,clip.startTime,clip.endTime);
+      _dlBlob(wavBlob,`${_hvcFilename(clip,lesson)}.wav`);
+    }
+  }catch(e){console.error('hvcDownload',e);showToast('⚠ Export failed: '+e.message);}
+  finally{if(btn){btn.textContent='⬇ Audio';btn.disabled=false;}}
+}
+
+function hvcDownloadSRT(clipId, lessonId){
+  const entry=_hvcAllClips.find(x=>x.clip.id===clipId&&x.lesson.id===lessonId);
+  if(!entry)return;
+  const {clip,lesson}=entry;
+  _dlBlob(new Blob([clip.srtContent||''],{type:'text/plain'}),`${_hvcFilename(clip,lesson)}.srt`);
+}
+
+function _hvcFilename(clip, lesson){
+  return `${(lesson.name||'shadow').replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${clip.name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}`;
+}
+
+async function hvcDeleteClip(lessonId, clipId){
+  if(!confirm('Delete this clip?'))return;
+  try{
+    const lesson=await DB.get(lessonId);
+    if(!lesson)return;
+    lesson.clips=(lesson.clips||[]).filter(c=>c.id!==clipId);
+    await DB.save(lesson);
+    if(S.lesson&&S.lesson.id===lessonId) S.lesson.clips=lesson.clips;
+    showToast('Clip deleted');
+    renderHomeClips(); // stays in detail view since _hvcOpenLessonId is still set
+    // If folder is now empty, go back to lesson list
+    if(!lesson.clips.length){_hvcOpenLessonId=null;}
+  }catch(e){console.error(e);}
+}
+
+async function hvcOpenLesson(lessonId, clipId){
+  try{
+    const lesson=await DB.get(lessonId);
+    if(!lesson)return;
+    await loadLesson(lesson);showPlayer();
+    const clip=lesson.clips?.find(c=>c.id===clipId);
+    if(clip?.sentIndices?.length){
+      S.sel=new Set(clip.sentIndices);
+      jumpTo(clip.sentIndices[0]);
+      updSelUI();
+      showTab('clips');
+    }
+  }catch(e){console.error(e);}
+}
+
+// ═══════════════════════════════════════════
+//  AUDIO EXTRACTION HELPERS
+// ═══════════════════════════════════════════
+async function _extractAudioSents(mediaData, subs){
+  const ac=new AudioContext();
+  const buf=await ac.decodeAudioData(mediaData.slice(0));
+  const sr=buf.sampleRate;
+  const segments=subs.map(s=>({
+    startSmp:Math.floor(s.start*sr),
+    endSmp:Math.min(buf.length,Math.ceil(s.end*sr))
+  }));
+  const totalSamples=segments.reduce((sum,seg)=>sum+(seg.endSmp-seg.startSmp),0);
+  const outData=new Float32Array(totalSamples);
+  let pos=0;
+  for(const seg of segments){
+    const ch=buf.getChannelData(0);
+    for(let i=seg.startSmp;i<seg.endSmp;i++) outData[pos++]=ch[i]||0;
+  }
+  await ac.close();
+  return new Blob([encodeWAV(outData,sr)],{type:'audio/wav'});
+}
+
+async function _extractAudioRange(mediaData, startSec, endSec){
+  const ac=new AudioContext();
+  const buf=await ac.decodeAudioData(mediaData.slice(0));
+  const sr=buf.sampleRate;
+  const startSmp=Math.floor(startSec*sr);
+  const endSmp=Math.min(buf.length,Math.ceil(endSec*sr));
+  const outData=buf.getChannelData(0).slice(startSmp,endSmp);
+  await ac.close();
+  return new Blob([encodeWAV(outData,sr)],{type:'audio/wav'});
+}
 async function saveGlobalRules(){
   try{ await DB.setSetting('globalRules', globalRules); }
   catch(e){ console.error('saveGlobalRules IDB error',e); }
@@ -1776,18 +2191,396 @@ function loopSelected(){
   const s=[...S.sel].sort((a,b)=>a-b);
   jumpTo(s[0]);play();
 }
-function updMSBar(){const b=$('ms-bar'),n=S.sel.size;b.classList.toggle('show',n>0);$('ms-count').textContent=n+' selected'}
+function updMSBar(){
+  const b=$('ms-bar'),n=S.sel.size;
+  b.classList.toggle('show',n>0);
+  $('ms-count').textContent=n+' selected';
+  // Keep clip-add-bar in sync with selection state
+  const bar=$('clip-add-bar');
+  if(bar) bar.style.display=n>0?'block':'none';
+}
 
 // TABS / SIDEBAR
 function showTab(t){
-  ['sents','rules','recordings'].forEach(id=>$('tab-'+id).classList.toggle('on',id===t));
+  // Stop any playing clip preview when leaving clips tab
+  if(t!=='clips' && _clipAudio){_clipAudio.pause();_clipAudio=null;if(_clipPlayingId){_updClipPlayBtn(_clipPlayingId,'▶ Play');_clipPlayingId=null;}}
+  ['chapters','sents','clips','rules','recordings'].forEach(id=>{
+    $('tab-'+id)?.classList.toggle('on',id===t);
+  });
+  $('chapters-pane').style.display=t==='chapters'?'flex':'none';
   $('sents-pane').style.display=t==='sents'?'flex':'none';
+  $('clips-pane').style.display=t==='clips'?'flex':'none';
   $('rules-pane').style.display=t==='rules'?'flex':'none';
   $('recordings-pane').style.display=t==='recordings'?'flex':'none';
+  if(t==='chapters') renderChapterList();
+  if(t==='clips') renderClipList();
 }
 function toggleSB(id,forceOpen=false){
   if(forceOpen)$(id).classList.remove('col');
   else $(id).classList.toggle('col');
+}
+
+// ═══════════════════════════════════════════
+//  CHAPTERS
+// ═══════════════════════════════════════════
+let _chUpAV=null, _chUpSRT=null, _chIsVid=false;
+
+function getChapters(){ return S.lesson?.chapters||[]; }
+
+function renderChapterList(){
+  const list=$('chapter-list');if(!list)return;
+  if(!S.lesson){list.innerHTML='<div class="hint">Open a lesson to see chapters.</div>';return;}
+  const chapters=getChapters();
+  if(!chapters.length){
+    list.innerHTML='<div class="hint">No chapters yet.<br>Click <strong>+ Add Chapter</strong> to upload audio/video with subtitles.</div>';
+    return;
+  }
+  list.innerHTML=chapters.map((ch,i)=>`
+    <div class="ch-item ${S.lesson._activeChapter===ch.id?'active':''}" onclick="loadChapter('${ch.id}')">
+      <span class="ch-num">${i+1}</span>
+      <span class="ch-title" title="${esc(ch.name)}">${esc(ch.name)}</span>
+      <span class="ch-meta">${ch.subtitles?.length||0}s</span>
+      <button class="ib" onclick="event.stopPropagation();editChapter('${ch.id}')" style="width:20px;height:20px;font-size:11px;" title="Edit">✎</button>
+      <button class="ib" onclick="event.stopPropagation();deleteChapter('${ch.id}')" style="width:20px;height:20px;font-size:11px;color:var(--tx3);" title="Delete"
+        onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--tx3)'">✕</button>
+    </div>`).join('');
+}
+
+function openAddChapterModal(){
+  $('chapter-modal-title').textContent='Add Chapter';
+  $('chapter-edit-id').value='';
+  $('ch-name').value='';
+  _chUpAV=null;_chUpSRT=null;_chIsVid=false;
+  $('ch-av-badge').innerHTML='';$('ch-srt-badge').innerHTML='';
+  $('ch-av-ico').textContent='🎵';$('ch-srt-ico').textContent='📝';
+  openM('m-chapter');
+  setTimeout(()=>$('ch-name').focus(),80);
+}
+
+function editChapter(id){
+  const ch=getChapters().find(x=>x.id===id);if(!ch)return;
+  $('chapter-modal-title').textContent='Edit Chapter';
+  $('chapter-edit-id').value=id;
+  $('ch-name').value=ch.name;
+  _chUpAV=null;_chUpSRT=null;_chIsVid=ch.isVid||false;
+  $('ch-av-badge').innerHTML=ch.audioData||ch.videoData?`<span class="f-badge">${ch.isVid?'🎬':'🎵'} <span class="f-badge-t">${esc(ch.name)}</span></span>`:'';
+  $('ch-srt-badge').innerHTML=ch.subtitles?.length?`<span class="f-badge">📝 <span class="f-badge-t">${ch.subtitles.length} subtitles loaded</span></span>`:'';
+  $('ch-av-ico').textContent=ch.audioData||ch.videoData?'✅':'🎵';
+  $('ch-srt-ico').textContent=ch.subtitles?.length?'✅':'📝';
+  openM('m-chapter');
+  setTimeout(()=>$('ch-name').focus(),80);
+}
+
+function onChAVFile(file){
+  if(!file)return;
+  _chUpAV=file;_chIsVid=file.type.startsWith('video');
+  $('ch-av-badge').innerHTML=`<span class="f-badge">${_chIsVid?'🎬':'🎵'} <span class="f-badge-t">${esc(file.name)}</span></span>`;
+  $('ch-av-ico').textContent='✅';
+}
+function onChSRTFile(file){
+  if(!file)return;
+  _chUpSRT=file;
+  $('ch-srt-badge').innerHTML=`<span class="f-badge">📝 <span class="f-badge-t">${esc(file.name)}</span></span>`;
+  $('ch-srt-ico').textContent='✅';
+}
+
+async function saveChapter(){
+  const name=$('ch-name').value.trim()||'Untitled Chapter';
+  const editId=$('chapter-edit-id').value;
+
+  S.lesson.chapters=S.lesson.chapters||[];
+
+  if(editId){
+    // Edit existing
+    const ch=S.lesson.chapters.find(x=>x.id===editId);if(!ch)return;
+    ch.name=name;
+    if(_chUpAV){
+      const ab=await _chUpAV.arrayBuffer();
+      if(_chIsVid){ch.videoData=ab;ch.videoType=_chUpAV.type;delete ch.audioData;delete ch.audioType;}
+      else{ch.audioData=ab;ch.audioType=_chUpAV.type;delete ch.videoData;delete ch.videoType;}
+      ch.isVid=_chIsVid;
+    }
+    if(_chUpSRT){const txt=await _chUpSRT.text();ch.subtitles=parseSubFile(txt,_chUpSRT.name);}
+  } else {
+    // New chapter — media required
+    if(!_chUpAV){alert('Please upload an audio or video file for this chapter.');return}
+    const ab=await _chUpAV.arrayBuffer();
+    const ch={id:uid(),name,isVid:_chIsVid,createdAt:Date.now(),subtitles:[]};
+    if(_chIsVid){ch.videoData=ab;ch.videoType=_chUpAV.type;}
+    else{ch.audioData=ab;ch.audioType=_chUpAV.type;}
+    if(_chUpSRT){const txt=await _chUpSRT.text();ch.subtitles=parseSubFile(txt,_chUpSRT.name);}
+    S.lesson.chapters.push(ch);
+  }
+
+  await doSave();
+  _chUpAV=null;_chUpSRT=null;
+  closeM('m-chapter');
+  renderChapterList();
+}
+
+async function loadChapter(id){
+  const ch=getChapters().find(x=>x.id===id);if(!ch)return;
+  // Load chapter's media & subs into the player without replacing lesson
+  S.lesson._activeChapter=id;
+  S.subs=ch.subtitles||[];
+  S.curIdx=0;S.sel=new Set();S.loopSel=false;
+  S.abOn=false;S.abA=S.abB=null;S.abPhase=0;S.abActiveId=null;
+  S.repeatLine=false;S.autoPause=false;
+  $('chip-ab').textContent='A-B';$('chip-ab').classList.remove('on');
+  $('chip-repeat')?.classList.remove('on');
+  $('chip-autopause')?.classList.remove('on');
+
+  audEl.pause();vidEl.pause();
+  if(raf){cancelAnimationFrame(raf);raf=null}
+  clearAllActiveTracks();
+
+  if(ch.videoData){
+    const blob=new Blob([ch.videoData],{type:ch.videoType||'video/mp4'});
+    vidEl.src=URL.createObjectURL(blob);vidEl.playbackRate=S.speed;
+    audEl.src='';$('vid-area').style.display='block';
+    if(wfMain)wfMain.load(ch.videoData.slice(0));
+  } else if(ch.audioData){
+    const blob=new Blob([ch.audioData],{type:ch.audioType||'audio/mpeg'});
+    audEl.src=URL.createObjectURL(blob);audEl.playbackRate=S.speed;
+    vidEl.src='';$('vid-area').style.display='none';
+    if(wfMain)wfMain.load(ch.audioData.slice(0));
+  }
+
+  $('pl-title').textContent=ch.name+' · '+S.lesson.name;
+  updSentList();updStage();renderChapterList();
+  showTab('sents');
+}
+
+async function deleteChapter(id){
+  if(!confirm('Delete this chapter?'))return;
+  S.lesson.chapters=(S.lesson.chapters||[]).filter(x=>x.id!==id);
+  if(S.lesson._activeChapter===id) S.lesson._activeChapter=null;
+  await doSave();
+  renderChapterList();
+}
+
+// ═══════════════════════════════════════════
+//  CLIPS
+// ═══════════════════════════════════════════
+function getClips(){ return S.lesson?.clips||[]; }
+
+function renderClipList(){
+  const list=$('clip-list');if(!list)return;
+  if(!S.lesson){list.innerHTML='<div class="hint">Open a lesson to see clips.</div>';return;}
+  const clips=getClips();
+  // Show/hide the save-from-selection bar based on active selection
+  const bar=$('clip-add-bar');
+  if(bar) bar.style.display=S.sel.size>0?'block':'none';
+  if(!clips.length){
+    list.innerHTML='<div class="hint">No clips yet.<br>Select sentences and click <strong>✂ Save Clip</strong> to create one.</div>';
+    return;
+  }
+  list.innerHTML=[...clips].sort((a,b)=>b.createdAt-a.createdAt).map(clip=>`
+    <div class="clip-item" id="clipcard-${clip.id}">
+      <div class="clip-hd">
+        <span class="clip-icon">${clip.isVid?'🎬':'🎵'}</span>
+        <span class="clip-name" title="${esc(clip.name)}">${esc(clip.name)}</span>
+        <span class="clip-sents">${clip.sentCount} sent${clip.sentCount!==1?'s':''}</span>
+        <button class="ib" onclick="renameClipPrompt('${clip.id}')" style="width:20px;height:20px;font-size:11px;" title="Rename">✎</button>
+        <button class="ib" onclick="deleteClip('${clip.id}')" style="width:20px;height:20px;font-size:11px;color:var(--tx3);"
+          onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--tx3)'" title="Delete">✕</button>
+      </div>
+      ${clip.preview?`<div class="clip-preview">"${esc(clip.preview)}"</div>`:''}
+      <div style="font-size:10px;font-family:'JetBrains Mono',monospace;color:var(--tx3);margin-bottom:6px;">${fmtM(clip.startTime)} → ${fmtM(clip.endTime)} · ${new Date(clip.createdAt).toLocaleDateString()}</div>
+      <div class="clip-actions">
+        <button class="sm" onclick="playClip('${clip.id}')">▶ Play</button>
+        <button class="sm" onclick="loadClipSents('${clip.id}')">↗ Jump to</button>
+        <button class="sm" id="clip-dl-btn-${clip.id}" onclick="downloadClip('${clip.id}')">⬇ Audio</button>
+        <button class="sm" onclick="downloadClipSRT('${clip.id}')">⬇ SRT</button>
+      </div>
+    </div>`).join('');
+}
+
+async function saveClipFromSel(){
+  if(!S.sel.size){alert('Select at least one sentence first.');return}
+  if(!S.lesson){return}
+  const sorted=[...S.sel].sort((a,b)=>a-b);
+  const subs=sorted.map(i=>S.subs[i]).filter(Boolean);
+  if(!subs.length){alert('No valid sentences selected.');return}
+
+  const defName=sorted.length===1
+    ?`Sentence ${sorted[0]+1}`
+    :`Sentences ${sorted[0]+1}–${sorted[sorted.length-1]+1}`;
+  const name=prompt('Name this clip:',defName);
+  if(!name)return;
+
+  // Show saving state on both buttons
+  const saveBtn=document.querySelector('.ms-btn.grn');
+  const barBtn=$('clip-add-bar')?.querySelector('button');
+  const origSave=saveBtn?.textContent;
+  const origBar=barBtn?.textContent;
+  if(saveBtn){saveBtn.textContent='⏳ Saving…';saveBtn.disabled=true;}
+  if(barBtn){barBtn.textContent='⏳ Saving…';barBtn.disabled=true;}
+
+  try{
+    const isVid=S.lesson.isVid;
+    const mediaData=isVid?S.lesson.videoData:S.lesson.audioData;
+
+    const startTime=subs[0].start;
+    const endTime=subs[subs.length-1].end;
+    const preview=subs.map(s=>s.text).join(' ').slice(0,120);
+    const srtContent=_buildSRT(subs);
+
+    let audioData=null, audioType='audio/wav';
+    if(mediaData){
+      try{
+        const wavBlob=await _extractAudioSents(mediaData,subs);
+        audioData=await wavBlob.arrayBuffer();
+        audioType='audio/wav';
+      }catch(e){console.warn('clip audio encode failed',e)}
+    }
+
+    const clip={
+      id:uid(), name,
+      sentIndices:sorted,
+      sentCount:sorted.length,
+      startTime,endTime,
+      preview,srtContent,
+      audioData,audioType,isVid,
+      createdAt:Date.now()
+    };
+
+    S.lesson.clips=S.lesson.clips||[];
+    S.lesson.clips.push(clip);
+    await doSave();
+
+    showToast(`✂ Clip "${name}" saved`);
+    renderClipList();
+    showTab('clips');
+  }catch(e){
+    console.error('saveClip error',e);
+    alert('Failed to save clip: '+e.message);
+  }finally{
+    if(saveBtn){saveBtn.textContent=origSave;saveBtn.disabled=false;}
+    if(barBtn){barBtn.textContent=origBar;barBtn.disabled=false;}
+  }
+}
+
+function playClip(id){
+  const clip=getClips().find(x=>x.id===id);if(!clip)return;
+
+  // If clicking the same clip that's playing — stop it
+  if(_clipPlayingId===id && _clipAudio && !_clipAudio.paused){
+    _clipAudio.pause();_clipAudio=null;
+    _clipPlayingId=null;
+    _updClipPlayBtn(id,'▶ Play');
+    return;
+  }
+
+  // Stop any other playing clip
+  if(_clipAudio){_clipAudio.pause();_clipAudio=null;}
+  if(_clipPlayingId) _updClipPlayBtn(_clipPlayingId,'▶ Play');
+
+  if(!clip.audioData){
+    // Video clip: jump in main player
+    loadClipSents(id);return;
+  }
+
+  const blob=new Blob([clip.audioData],{type:clip.audioType||'audio/wav'});
+  _clipAudio=new Audio(URL.createObjectURL(blob));
+  _clipPlayingId=id;
+  _updClipPlayBtn(id,'⏸ Stop');
+  _clipAudio.play();
+  _clipAudio.onended=()=>{_clipPlayingId=null;_clipAudio=null;_updClipPlayBtn(id,'▶ Play');};
+  _clipAudio.onerror=()=>{_clipPlayingId=null;_clipAudio=null;_updClipPlayBtn(id,'▶ Play');};
+}
+
+function _updClipPlayBtn(id, label){
+  const card=document.getElementById('clipcard-'+id);
+  if(!card)return;
+  const btn=card.querySelector('.clip-actions .sm');
+  if(btn) btn.textContent=label;
+}
+
+function loadClipSents(id){
+  const clip=getClips().find(x=>x.id===id);if(!clip)return;
+  if(clip.sentIndices?.length){
+    // Jump to first sentence and select all clip sents
+    S.sel=new Set(clip.sentIndices);
+    jumpTo(clip.sentIndices[0]);
+    play();
+    updSelUI();
+    showTab('sents');
+  }
+}
+
+async function downloadClip(id){
+  const clip=getClips().find(x=>x.id===id);if(!clip)return;
+  const btn=document.getElementById('clip-dl-btn-'+id);
+  if(btn){btn.textContent='⏳';btn.disabled=true;}
+  try{
+    if(clip.audioData){
+      // Already have pre-extracted WAV
+      const blob=new Blob([clip.audioData],{type:clip.audioType||'audio/wav'});
+      _dlBlob(blob,`${_clipFilename(clip)}.wav`);
+    }else{
+      // Need to extract from lesson media (video or audio without cached audio)
+      const mediaData=S.lesson.isVid?S.lesson.videoData:S.lesson.audioData;
+      if(!mediaData){showToast('⚠ No media available');return;}
+      const subs=(clip.sentIndices||[]).map(i=>S.subs[i]).filter(Boolean);
+      let wavBlob;
+      if(subs.length){
+        wavBlob=await _extractAudioSents(mediaData,subs);
+      }else{
+        wavBlob=await _extractAudioRange(mediaData,clip.startTime,clip.endTime);
+      }
+      _dlBlob(wavBlob,`${_clipFilename(clip)}.wav`);
+    }
+  }catch(e){
+    console.error('downloadClip',e);
+    showToast('⚠ Audio export failed: '+e.message);
+  }finally{
+    if(btn){btn.textContent='⬇ Audio';btn.disabled=false;}
+  }
+}
+
+function downloadClipSRT(id){
+  const clip=getClips().find(x=>x.id===id);if(!clip)return;
+  const blob=new Blob([clip.srtContent||''],{type:'text/plain'});
+  _dlBlob(blob,`${_clipFilename(clip)}.srt`);
+}
+
+function _clipFilename(clip){
+  return `${(S.lesson?.name||'shadow').replace(/[^a-z0-9]/gi,'-').toLowerCase()}-${clip.name.replace(/[^a-z0-9]/gi,'-').toLowerCase()}`;
+}
+
+function renameClipPrompt(id){
+  const clip=getClips().find(x=>x.id===id);if(!clip)return;
+  const name=prompt('Rename clip:',clip.name);
+  if(!name||name===clip.name)return;
+  clip.name=name;
+  doSave();renderClipList();
+}
+
+async function deleteClip(id){
+  if(!confirm('Delete this clip?'))return;
+  S.lesson.clips=(S.lesson.clips||[]).filter(x=>x.id!==id);
+  await doSave();renderClipList();
+}
+
+// ═══════════════════════════════════════════
+//  SUBTITLE / DOWNLOAD HELPERS
+// ═══════════════════════════════════════════
+function _buildSRT(subs){
+  const offset=subs[0].start;
+  return subs.map((s,i)=>{
+    const start=Math.max(0,s.start-offset);
+    const end=Math.max(start+0.1,s.end-offset);
+    return `${i+1}\n${_srtTime(start)} --> ${_srtTime(end)}\n${s.text}`;
+  }).join('\n\n');
+}
+function _srtTime(sec){
+  const h=Math.floor(sec/3600),m=Math.floor((sec%3600)/60),s=Math.floor(sec%60),ms=Math.round((sec%1)*1000);
+  return `${String(h).padStart(2,'0')}:${String(m).padStart(2,'0')}:${String(s).padStart(2,'0')},${String(ms).padStart(3,'0')}`;
+}
+function _dlBlob(blob,filename){
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=filename;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),5000);
 }
 
 // ═══════════════════════════════════════════
@@ -1800,6 +2593,9 @@ async function loadLesson(lesson){
   S.abOn=false;S.abA=S.abB=null;S.abPhase=0;S.abActiveId=null;
   S.repeatLine=false;S.autoPause=false;
   S.lesson.abMarkers=lesson.abMarkers||[];
+  S.lesson.chapters=lesson.chapters||[];
+  S.lesson.clips=lesson.clips||[];
+  S.lesson._activeChapter=null;
   $('chip-ab').textContent='A-B';$('chip-ab').classList.remove('on');
   $('chip-repeat')?.classList.remove('on');
   $('chip-autopause')?.classList.remove('on');
@@ -1809,6 +2605,7 @@ async function loadLesson(lesson){
   }
   S.lesson.recordings=lesson.recordings||[];
   audEl.pause();vidEl.pause();
+  if(_clipAudio){_clipAudio.pause();_clipAudio=null;_clipPlayingId=null;}
   if(raf){cancelAnimationFrame(raf);raf=null}
   clearAllActiveTracks();
   if(lesson.videoData){
@@ -1825,7 +2622,7 @@ async function loadLesson(lesson){
   $('lesson-bar').textContent=lesson.name;
   $('pl-title').textContent=lesson.name;
   if(S.trimS>0)setTimeout(()=>seekTo(S.trimS),400);
-  updSentList();updStage();updRulesSidebar();renderRecordingsTab();renderABPanel();
+  updSentList();updStage();updRulesSidebar();renderRecordingsTab();renderABPanel();renderChapterList();renderClipList();
 }
 
 async function loadSaved(id){
@@ -2922,6 +3719,8 @@ async function init(){
   setupDrop('av-zone',onAVFile);
   setupDrop('srt-zone',onSRTFile);
   setupDrop('urec-zone',loadExtRec);
+  setupDrop('ch-av-zone', onChAVFile);
+  setupDrop('ch-srt-zone', onChSRTFile);
   showTab('sents');
   goHome('library');
 }
