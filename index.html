@@ -1249,6 +1249,134 @@ nav {
   text-align: center; line-height: 1.65; opacity: 0.7;
 }
 
+/* ════════════ RULES PANEL SIDEBAR ════════════ */
+.rulepanel-sidebar {
+  width: 268px; flex-shrink: 0;
+  border-left: 1px solid var(--border); background: var(--surface);
+  display: flex; flex-direction: column; overflow: hidden;
+  transition: width 0.25s ease, opacity 0.2s ease;
+}
+.rulepanel-sidebar.collapsed { width: 0; opacity: 0; pointer-events: none; }
+
+.rp-header {
+  padding: 11px 14px 9px; border-bottom: 1px solid var(--border);
+  display: flex; align-items: center; gap: 7px; flex-shrink: 0;
+}
+.rp-title {
+  font-size: 0.62rem; font-weight: 700; letter-spacing: 0.1em;
+  text-transform: uppercase; color: var(--muted); flex: 1; white-space: nowrap;
+  display: flex; align-items: center; gap: 5px;
+}
+.rp-count-badge {
+  font-size: 0.57rem; font-family: 'DM Mono', monospace;
+  background: rgba(245,158,11,0.12); color: #f59e0b;
+  border-radius: 10px; padding: 1px 6px; font-weight: 700; flex-shrink: 0;
+}
+.rp-search {
+  padding: 6px 10px; border-bottom: 1px solid var(--border);
+  flex-shrink: 0; position: relative;
+}
+.rp-search::before {
+  content: ''; position: absolute; left: 19px; top: 50%; transform: translateY(-50%);
+  width: 12px; height: 12px; pointer-events: none;
+  background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23555' stroke-width='2.2' stroke-linecap='round'%3E%3Ccircle cx='11' cy='11' r='8'/%3E%3Cline x1='21' y1='21' x2='16.65' y2='16.65'/%3E%3C/svg%3E") center/contain no-repeat;
+}
+.rp-search input {
+  width: 100%; background: var(--bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 9px 5px 26px; font-size: 0.68rem;
+  color: var(--text); font-family: 'DM Sans', sans-serif; outline: none;
+  transition: border-color 0.15s;
+}
+.rp-search input:focus { border-color: #3a3a3a; }
+.rp-search input::placeholder { color: var(--muted); }
+
+.rp-list { overflow-y: auto; flex: 1; padding: 2px 0; }
+.rp-list::-webkit-scrollbar { width: 3px; }
+.rp-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 2px; }
+
+.rp-rule-row {
+  display: flex; flex-direction: column;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.rp-rule-row:hover { background: var(--surface2); }
+.rp-rule-view {
+  display: flex; align-items: flex-start; gap: 8px;
+  padding: 9px 12px 9px 10px;
+}
+.rp-rule-main { flex: 1; min-width: 0; }
+.rp-rule-orig { font-size: 0.8rem; font-weight: 600; color: var(--text); display: block; }
+.rp-rule-arrow-form {
+  font-size: 0.72rem; color: #f59e0b; font-style: italic;
+  margin-top: 1px; display: block; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rp-rule-note-text {
+  font-size: 0.62rem; color: var(--muted2); margin-top: 2px; display: block;
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.rp-rule-meta {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap; margin-top: 4px;
+}
+.rp-rule-btns {
+  display: flex; align-items: center; gap: 2px; flex-shrink: 0; padding-top: 1px;
+}
+.rp-btn {
+  background: none; border: none; cursor: pointer; padding: 3px 5px;
+  border-radius: 4px; font-size: 0.72rem; color: var(--muted);
+  transition: color 0.12s; line-height: 1; flex-shrink: 0;
+}
+.rp-btn:hover { color: var(--text); }
+.rp-btn.rp-del:hover { color: var(--accent); }
+.rp-btn.rp-edit:hover { color: #4ade80; }
+
+.rp-edit-area {
+  display: none; padding: 10px 12px 12px;
+  background: var(--surface2); border-top: 1px solid var(--border);
+}
+.rp-edit-label {
+  font-size: 0.58rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.09em; color: #4ade80; margin-bottom: 8px;
+}
+.rp-edit-field { margin-bottom: 7px; }
+.rp-edit-field label {
+  display: block; font-size: 0.58rem; color: var(--muted); margin-bottom: 3px;
+}
+.rp-edit-field input, .rp-edit-field select {
+  width: 100%; background: var(--surface); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 8px; font-size: 0.75rem;
+  color: var(--text); font-family: 'DM Sans', sans-serif; outline: none;
+  transition: border-color 0.15s;
+}
+.rp-edit-field input:focus { border-color: #4ade80; }
+.rp-edit-form-inp { color: #f59e0b !important; font-style: italic; }
+.rp-edit-form-inp:focus { border-color: #f59e0b !important; }
+.rp-edit-actions { display: flex; gap: 6px; margin-top: 8px; }
+.rp-save-btn {
+  flex: 1; background: #4ade80; color: #0a1a0a; border: none; border-radius: 6px;
+  font-size: 0.7rem; font-weight: 700; padding: 5px 0; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: opacity 0.12s;
+}
+.rp-save-btn:hover { opacity: 0.85; }
+.rp-cancel-btn {
+  flex: 1; background: none; border: 1px solid var(--border); color: var(--muted);
+  border-radius: 6px; font-size: 0.7rem; padding: 5px 0; cursor: pointer;
+  font-family: 'DM Sans', sans-serif; transition: all 0.12s;
+}
+.rp-cancel-btn:hover { border-color: #555; }
+
+.rp-footer {
+  border-top: 1px solid var(--border); padding: 8px 10px; flex-shrink: 0;
+  background: var(--bg);
+}
+.rp-goto-btn {
+  width: 100%; padding: 7px 0; border-radius: 7px;
+  border: 1px solid rgba(245,158,11,0.3); background: rgba(245,158,11,0.07);
+  color: #f59e0b; font-size: 0.63rem; font-weight: 600;
+  font-family: 'DM Sans', sans-serif; cursor: pointer; transition: all 0.15s;
+  display: flex; align-items: center; justify-content: center; gap: 5px;
+}
+.rp-goto-btn:hover { background: rgba(245,158,11,0.14); border-color: rgba(245,158,11,0.55); }
+
 /* ════════════ RESPONSIVE ════════════ */
 @media (max-width: 640px) {
   .upload-grid { grid-template-columns: 1fr; }
@@ -2900,7 +3028,6 @@ nav {
           <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Words you've failed multiple times during study sessions</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button onclick="mvSendWeakToVF()" id="mv-weak-send-btn" style="background:var(--accent);color:white;border:none;border-radius:8px;font-size:0.72rem;font-weight:600;padding:7px 16px;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0.4;pointer-events:none;transition:opacity 0.15s;" disabled>📖 Send to VocabForge</button>
           <button onclick="mvRefreshWeak()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.72rem;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='#444';this.style.color='var(--text)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">↻ Refresh</button>
         </div>
       </div>
@@ -2931,7 +3058,6 @@ nav {
           <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Words you've marked for focused study from the reader tooltip</div>
         </div>
         <div style="display:flex;gap:8px;flex-wrap:wrap;">
-          <button onclick="mvFocusSendToVF()" id="mv-focus-send-btn" style="background:var(--accent);color:white;border:none;border-radius:8px;font-size:0.72rem;font-weight:600;padding:7px 16px;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0.4;pointer-events:none;transition:opacity 0.15s;" disabled>📖 Send to VocabForge</button>
           <button onclick="mvFocusClearAll()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.72rem;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">✕ Clear all</button>
         </div>
       </div>
@@ -2945,12 +3071,11 @@ nav {
         <div style="display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:12px;margin-bottom:16px;">
           <div>
             <div style="font-size:1rem;font-weight:600;letter-spacing:-0.01em;">⚡ Words Mining</div>
-            <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Capture words as you read. Send them to VocabForge to study later.</div>
+            <div style="font-size:0.72rem;color:var(--muted);margin-top:3px;">Capture words as you read. Download as CSV to import into your vocabulary decks.</div>
           </div>
           <div style="display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
             <button onclick="mvMineToggleInfo()" id="mv-mine-info-btn" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.7rem;padding:5px 12px;border-radius:7px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='var(--accent)';this.style.color='var(--accent)'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">ⓘ How it works</button>
             <button onclick="mvMineDownloadCSV()" id="mv-mine-dl-btn" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.72rem;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='#22c55e';this.style.color='#22c55e'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⬇ Download CSV</button>
-            <button onclick="mvMineSendToVF()" id="mv-mine-send-btn" style="background:var(--accent);color:white;border:none;border-radius:8px;font-size:0.72rem;font-weight:600;padding:7px 16px;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0.4;pointer-events:none;" disabled>📖 Send to VocabForge</button>
           </div>
         </div>
 
@@ -2961,7 +3086,7 @@ nav {
 
             <div>
               <div style="font-size:0.68rem;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:5px;"><span style="background:rgba(139,92,246,0.15);color:#a78bfa;border-radius:4px;padding:1px 6px;font-size:0.6rem;font-family:'DM Mono',monospace;">1 · ADD</span></div>
-              <p style="margin:0 0 6px;">Type a word into the Quick Capture form and press <strong style="color:var(--text)">+ Mine</strong>. Pronunciation and definition are optional but useful for VocabForge study later.</p>
+              <p style="margin:0 0 6px;">Type a word into the Quick Capture form and press <strong style="color:var(--text)">+ Mine</strong>. Pronunciation and definition are optional but useful for CSV export later.</p>
               <p style="margin:0;opacity:0.75;">You can also send words here from a future reader integration (text-selection mining).</p>
             </div>
 
@@ -2973,8 +3098,8 @@ nav {
 
             <div>
               <div style="font-size:0.68rem;font-weight:700;color:var(--text);margin-bottom:6px;display:flex;align-items:center;gap:5px;"><span style="background:rgba(74,222,128,0.15);color:#4ade80;border-radius:4px;padding:1px 6px;font-size:0.6rem;font-family:'DM Mono',monospace;">3 · STUDY</span></div>
-              <p style="margin:0 0 6px;">Click <strong style="color:var(--text)">Send to VocabForge</strong> to load your mined words into the SRS session. From there they go through Quiz, Flashcard, or Multiple Choice — and start building a level.</p>
-              <p style="margin:0;opacity:0.75;">Or use <strong style="color:var(--text)">Download CSV</strong> to export and re-import as a permanent vocabulary deck via the Upload tab.</p>
+              <p style="margin:0 0 6px;">Use <strong style="color:var(--text)">Download CSV</strong> to export your mined words and re-import as a permanent vocabulary deck via the Upload tab.</p>
+              <p style="margin:0;opacity:0.75;">The CSV includes word, pronunciation, and definition columns — ready to use immediately.</p>
             </div>
 
           </div>
@@ -3029,7 +3154,6 @@ nav {
             <input type="file" accept=".csv,.txt" style="display:none" onchange="mvMasteredImport(this)">
           </label>
           <button onclick="mvMasteredDownloadCSV()" style="background:none;border:1px solid var(--border);color:var(--muted);font-size:0.72rem;padding:7px 14px;border-radius:8px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.15s;" onmouseover="this.style.borderColor='#22c55e';this.style.color='#22c55e'" onmouseout="this.style.borderColor='var(--border)';this.style.color='var(--muted)'">⬇ Export CSV</button>
-          <button onclick="mvMasteredReviewInVF()" id="mv-mastered-review-btn" style="background:var(--accent);color:white;border:none;border-radius:8px;font-size:0.72rem;font-weight:600;padding:7px 16px;cursor:pointer;font-family:'DM Sans',sans-serif;opacity:0.4;pointer-events:none;" disabled>📖 Review in VocabForge</button>
         </div>
       </div>
 
@@ -3187,6 +3311,10 @@ nav {
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M12 20h9" stroke-linecap="round"/><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z" stroke-linecap="round" stroke-linejoin="round"/></svg>
           Highlights
         </button>
+        <button class="icon-btn" id="rulepanel-toggle-btn" onclick="toggleRulePanel()" title="Toggle Chapter Rules panel">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:13px;height:13px"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Rules
+        </button>
 
         <button class="icon-btn" id="reader-settings-btn" onclick="openSettingsOverlay()">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:14px;height:14px"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
@@ -3323,6 +3451,28 @@ nav {
         </button>
       </div>
     </div>
+
+    <!-- ════════ RULES PANEL ════════ -->
+    <div class="rulepanel-sidebar collapsed" id="rulepanel-sidebar">
+      <div class="rp-header">
+        <span class="rp-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:12px;height:12px;flex-shrink:0"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          Chapter Rules
+        </span>
+        <span class="rp-count-badge" id="rp-count">0</span>
+      </div>
+      <div class="rp-search">
+        <input type="text" id="rp-search-inp" placeholder="Filter rules…" oninput="rpRender()">
+      </div>
+      <div class="rp-list" id="rp-list"></div>
+      <div class="rp-footer">
+        <button class="rp-goto-btn" onclick="rpGoToVocabRules()">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="width:11px;height:11px"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" stroke-linecap="round" stroke-linejoin="round"/><polyline points="15 3 21 3 21 9" stroke-linecap="round" stroke-linejoin="round"/><line x1="10" y1="14" x2="21" y2="3" stroke-linecap="round"/></svg>
+          Manage All Rules
+        </button>
+      </div>
+    </div>
+
     <div id="dict-sidebar" class="collapsed">
       <div class="dsb-header">
         <span class="dsb-title">📖 Dictionary</span>
@@ -9046,12 +9196,13 @@ function renderBadge() {
   const spans = Array.from(content.querySelectorAll('.pera-hl'));
   if (!spans.length) { removeBadge(); return; }
 
-  // Deduplicate by word key — skip mined spans
+  // Deduplicate by word key — skip mined spans and ignored words
   const seen = new Map();
   spans.forEach(s => {
     const w = s.dataset.word;
     if (!w || seen.has(w)) return;
     if (s.dataset.si === MINED_SI) return; // mined phrases don't count toward badge
+    if (s.classList.contains('hl-ignored')) return; // skip ignored words
     const si  = parseInt(s.dataset.si, 10);
     const set = !isNaN(si) && csvSets[si] ? csvSets[si] : null;
     const ent = set ? (set.words[s.dataset.origWord] || set.words[w] || {}) : {};
@@ -9109,7 +9260,7 @@ function renderBadge() {
             <div style="background:rgba(255,255,255,0.04);border-radius:7px;padding:7px 9px;display:flex;flex-direction:column;gap:2px;">
               <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:2px;">
                 <span style="font-size:9px;color:#64748b;text-transform:uppercase;letter-spacing:0.06em;font-weight:600;">Book</span>
-                <button id="bdg-vf-book" title="Open book words in VocabForge" style="display:flex;align-items:center;gap:2px;padding:2px 5px;border-radius:4px;border:1px solid rgba(201,134,30,0.35);font-size:9px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;background:rgba(201,134,30,0.10);color:#c9861e;transition:all 0.15s;line-height:1;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>VF</button>
+                <button id="bdg-csv-book" title="Download book highlight words as CSV" style="display:flex;align-items:center;gap:2px;padding:2px 5px;border-radius:4px;border:1px solid rgba(74,222,128,0.35);font-size:9px;font-weight:700;font-family:'DM Sans',sans-serif;cursor:pointer;background:rgba(74,222,128,0.10);color:#4ade80;transition:all 0.15s;line-height:1;"><svg width="9" height="9" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>CSV</button>
               </div>
               <div id="bdg-book-vocab" style="font-size:12px;font-weight:700;color:#e2e8f0;font-variant-numeric:tabular-nums;line-height:1.2;"></div>
               <div id="bdg-book-total" style="font-size:9px;color:#475569;font-variant-numeric:tabular-nums;"></div>
@@ -9141,8 +9292,8 @@ function renderBadge() {
       if (e.target.id === 'bdg-vf-chap' || e.target.closest?.('#bdg-vf-chap')) {
         badgeSendToVf(); e.stopPropagation(); return;
       }
-      if (e.target.id === 'bdg-vf-book' || e.target.closest?.('#bdg-vf-book')) {
-        badgeSendBookToVf(); e.stopPropagation(); return;
+      if (e.target.id === 'bdg-csv-book' || e.target.closest?.('#bdg-csv-book')) {
+        badgeDownloadBookCSV(); e.stopPropagation(); return;
       }
       const chipLv = e.target.dataset?.lv ? parseInt(e.target.dataset.lv, 10) : 0;
       if (chipLv) {
@@ -9349,6 +9500,29 @@ function badgeSendBookToVf() {
   hlToast(`✓ ${toLoad.length} book words sent to VocabForge`);
   showHome();
   setTimeout(() => { switchHomeTab('vocabforge'); vfSetMode('cards'); }, 80);
+}
+
+// Download all unique vocab words found across every chapter in the book as CSV
+function badgeDownloadBookCSV() {
+  if (!chapters.length || !csvSets.length) { hlToast('No book or CSV loaded'); return; }
+  if (!_bookStats?.vocabWords?.size) { hlToast('Book stats not ready — please wait a moment'); return; }
+
+  const prog = vfLoadProgress();
+  const rows = ['word,pronunciation,definition,level'];
+  _bookStats.vocabWords.forEach(w => {
+    let ph = '', def = '';
+    csvSets.forEach(set => { if (!ph && set.words[w]) { ph = set.words[w].ph || ''; def = set.words[w].def || ''; } });
+    const lv = prog[w]?.level ?? 1;
+    const esc = v => '"' + String(v).replace(/"/g, '""') + '"';
+    rows.push([esc(w), esc(ph), esc(def), lv].join(','));
+  });
+
+  const blob = new Blob([rows.join('\n')], { type: 'text/csv' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'book-highlights-' + new Date().toISOString().slice(0,10) + '.csv';
+  a.click();
+  hlToast(`⬇ ${_bookStats.vocabWords.size} book words exported as CSV`);
 }
 
 function removeBadge() {
@@ -10748,7 +10922,6 @@ function mvGetWeakWords() {
 
 function mvRefreshWeak() {
   const list    = document.getElementById('mv-weak-list');
-  const sendBtn = document.getElementById('mv-weak-send-btn');
   if (!list) return;
 
   // Sync fail threshold display
@@ -10761,7 +10934,6 @@ function mvRefreshWeak() {
   if (!csvSets.length) {
     list.innerHTML = `<div style="grid-column:1/-1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 0;gap:10px;color:var(--muted);font-size:0.85rem;text-align:center;">
       <span style="font-size:2rem;opacity:0.3">⚠️</span>No vocabulary sets loaded.<br>Upload CSVs in the Upload tab first.</div>`;
-    if (sendBtn) { sendBtn.style.opacity='0.4'; sendBtn.style.pointerEvents='none'; sendBtn.disabled=true; }
     return;
   }
 
@@ -10772,11 +10944,8 @@ function mvRefreshWeak() {
       <strong style="color:var(--text)">No weak words yet</strong>
       <span style="max-width:280px;text-align:center;line-height:1.7">Words appear here after you've failed them <strong>${thresh}</strong> or more times in Quiz, Flashcard, or Multiple Choice sessions.</span>
     </div>`;
-    if (sendBtn) { sendBtn.style.opacity='0.4'; sendBtn.style.pointerEvents='none'; sendBtn.disabled=true; }
     return;
   }
-
-  if (sendBtn) { sendBtn.style.opacity='1'; sendBtn.style.pointerEvents='all'; sendBtn.disabled=false; }
 
   list.innerHTML = '';
   weak.forEach(w => {
@@ -10888,14 +11057,9 @@ function mvRenderFocus() {
   const entries = _hlFocusLoad();
   const list    = document.getElementById('mv-focus-list');
   const countEl = document.getElementById('mv-focus-count');
-  const sendBtn = document.getElementById('mv-focus-send-btn');
   if (!list) return;
 
   if (countEl) countEl.textContent = `${entries.length} word${entries.length !== 1 ? 's' : ''} focused`;
-  if (sendBtn) {
-    if (entries.length) { sendBtn.style.opacity = '1'; sendBtn.style.pointerEvents = 'all'; sendBtn.disabled = false; }
-    else { sendBtn.style.opacity = '0.4'; sendBtn.style.pointerEvents = 'none'; sendBtn.disabled = true; }
-  }
 
   if (!entries.length) {
     list.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:60px 0;gap:10px;color:var(--muted);font-size:0.83rem;text-align:center;"><span style="font-size:2rem;opacity:0.4;color:#fbbf24;">★</span>No focus words yet.<br>Click <strong style="color:var(--text)">☆ Focus</strong> in a word\'s tooltip while reading.</div>';
@@ -10951,14 +11115,9 @@ function mvRenderMined() {
   const entries = mvMineLoad();
   const list = document.getElementById('mv-mine-list');
   const countEl = document.getElementById('mv-mine-count');
-  const sendBtn = document.getElementById('mv-mine-send-btn');
   if (!list) return;
 
   if (countEl) countEl.textContent = `${entries.length} / ${MV_MINE_MAX} words captured`;
-  if (sendBtn) {
-    if (entries.length) { sendBtn.style.opacity='1'; sendBtn.style.pointerEvents='all'; sendBtn.disabled=false; }
-    else { sendBtn.style.opacity='0.4'; sendBtn.style.pointerEvents='none'; sendBtn.disabled=true; }
-  }
 
   if (!entries.length) {
     list.innerHTML = '<div style="display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 0;gap:10px;color:var(--muted);font-size:0.83rem;text-align:center;"><span style="font-size:2rem;opacity:0.3">⚡</span>No words mined yet.<br>Use the capture form above.</div>';
@@ -11080,7 +11239,6 @@ function mvSetPerPage(n) {
 function mvRenderMastered() {
   const listEl   = document.getElementById('mv-mastered-list');
   const statsEl  = document.getElementById('mv-mastered-stats');
-  const reviewBtn = document.getElementById('mv-mastered-review-btn');
   const searchEl = document.getElementById('mv-mastered-search');
   const pagerEl  = document.getElementById('mv-mastered-pager');
   if (!listEl) return;
@@ -11113,13 +11271,6 @@ function mvRenderMastered() {
             <span style="font-size:0.63rem;color:#4ade80;font-family:'DM Mono',monospace;min-width:20px;text-align:right;">${n}</span>
           </div>`).join('')}
       </div>`;
-  }
-
-  if (reviewBtn) {
-    const hasWords = total > 0;
-    reviewBtn.style.opacity = hasWords ? '1' : '0.4';
-    reviewBtn.style.pointerEvents = hasWords ? 'all' : 'none';
-    reviewBtn.disabled = !hasWords;
   }
 
   if (!words.length) {
@@ -13506,17 +13657,19 @@ function _uwordsBadgeReposition() {
 function _badgeReposition() {
   const badge = document.getElementById('pera-badge');
   if (!badge) return;
-  // Tip sidebar (300px) takes priority, then uwords (280px), then highlights panel (268px)
+  // Tip sidebar (300px) takes priority; then stack open panels right-to-left
   if (_tipSidebarOpen) {
     badge.style.right = 'calc(300px + 16px)';
-  } else if (_uwordsSidebarOpen && _hlPanelOpen) {
-    badge.style.right = 'calc(var(--uwords-w, 280px) + 268px + 16px)';
-  } else if (_uwordsSidebarOpen) {
-    badge.style.right = 'calc(var(--uwords-w, 280px) + 16px)';
-  } else if (_hlPanelOpen) {
-    badge.style.right = 'calc(268px + 16px)';
-  } else {
+    return;
+  }
+  const uw  = _uwordsSidebarOpen ? 'var(--uwords-w, 280px)' : null;
+  const hlp = _hlPanelOpen  ? '268px' : null;
+  const rlp = _rulePanelOpen ? '268px' : null;
+  const parts = [uw, hlp, rlp].filter(Boolean);
+  if (!parts.length) {
     badge.style.right = '16px';
+  } else {
+    badge.style.right = 'calc(' + parts.join(' + ') + ' + 16px)';
   }
 }
 
@@ -13545,6 +13698,232 @@ function toggleHlPanel() {
   if (btn) btn.classList.toggle('hl-active', _hlPanelOpen);
   _badgeReposition();
   if (_hlPanelOpen) hlpRender();
+}
+
+// ════════════════════════════════════════════════════
+// RULES PANEL
+// Shows all connected-speech rules that match the current
+// chapter, with inline edit and delete.
+// ════════════════════════════════════════════════════
+let _rulePanelOpen = false;
+
+function toggleRulePanel() {
+  _rulePanelOpen = !_rulePanelOpen;
+  const sb  = document.getElementById('rulepanel-sidebar');
+  const btn = document.getElementById('rulepanel-toggle-btn');
+  sb?.classList.toggle('collapsed', !_rulePanelOpen);
+  if (btn) btn.classList.toggle('hl-active', _rulePanelOpen);
+  _badgeReposition();
+  if (_rulePanelOpen) {
+    // Small delay so csApplyHighlights (and _csMatchCounts) are ready
+    // whether the panel is opened on first load or mid-session.
+    setTimeout(rpRender, 50);
+  }
+}
+
+// Collect all rules that have at least one match in the current chapter text.
+// Works regardless of whether Connected Speech mode is active.
+// Uses the raw chapter source HTML so CS-applied DOM mutations don't interfere.
+function _rpCollectChapterRules() {
+  // Prefer raw chapter source — immune to CS span replacements in the live DOM
+  let text = '';
+  if (chapters.length && chapters[currentChap]) {
+    // Strip HTML tags to get plain text, then normalise whitespace
+    const tmp = document.createElement('div');
+    tmp.innerHTML = chapters[currentChap].html || '';
+    text = tmp.textContent || '';
+  } else {
+    // Fallback: live DOM (chapter not yet in chapters[] — shouldn't happen normally)
+    const content = document.getElementById('chapter-content');
+    if (!content) return [];
+    text = content.textContent || '';
+  }
+  if (!text.trim()) return [];
+
+  const allRules = csRulesLoad();
+  if (!allRules.length) return [];
+
+  function escRe(s) { return s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); }
+
+  return allRules.filter(r => {
+    try {
+      const re = new RegExp(
+        '(?<![a-zA-Z\u00C0-\u024F])' + escRe(r.orig) + '(?![a-zA-Z\u00C0-\u024F])',
+        'i'
+      );
+      return re.test(text);
+    } catch { return false; }
+  }).map(r => ({
+    ...r,
+    hits: _csMatchCounts[r.orig.toLowerCase()] || 0
+  }));
+}
+
+function rpRender() {
+  const list   = document.getElementById('rp-list');
+  const badge  = document.getElementById('rp-count');
+  if (!list) return;
+
+  const q = (document.getElementById('rp-search-inp')?.value || '').toLowerCase().trim();
+  let rules = _rpCollectChapterRules();
+
+  if (q) rules = rules.filter(r =>
+    r.orig.toLowerCase().includes(q) ||
+    r.form.toLowerCase().includes(q) ||
+    (r.note   || '').toLowerCase().includes(q) ||
+    (r.category || '').toLowerCase().includes(q)
+  );
+
+  if (badge) badge.textContent = rules.length;
+
+  list.innerHTML = '';
+
+  if (!rules.length) {
+    const allCount = csRulesLoad().length;
+    list.innerHTML = `<div class="hlpanel-empty">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" style="width:28px;height:28px;opacity:0.3"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71" stroke-linecap="round" stroke-linejoin="round"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      ${q ? 'No rules match your filter.' : allCount === 0 ? 'No rules defined yet.<br>Add rules in My Vocab → Rules.' : 'No rules match this chapter.'}
+    </div>`;
+    return;
+  }
+
+  // Sort: highest hit count first, then alphabetical
+  rules.sort((a, b) => (b.hits - a.hits) || a.orig.localeCompare(b.orig));
+
+  rules.forEach(r => {
+    const isEnabled = r.enabled !== false;
+    const cat       = r.category || 'Custom';
+    const catColor  = (typeof csCatColor === 'function') ? csCatColor(cat) : '#f59e0b';
+    const catRgb    = (typeof hexToRgb   === 'function') ? hexToRgb(catColor) : '245,158,11';
+
+    const row = document.createElement('div');
+    row.className = 'rp-rule-row';
+    if (!isEnabled) row.style.opacity = '0.45';
+
+    // ── View row ──
+    const viewDiv = document.createElement('div');
+    viewDiv.className = 'rp-rule-view';
+    viewDiv.innerHTML = `
+      <div class="rp-rule-main">
+        <span class="rp-rule-orig">${esc(r.orig)}</span>
+        <span class="rp-rule-arrow-form">→ ${esc(r.form)}</span>
+        ${r.note ? `<span class="rp-rule-note-text">${esc(r.note)}</span>` : ''}
+        <div class="rp-rule-meta">
+          <span style="font-size:0.58rem;font-weight:700;padding:1px 6px;border-radius:7px;white-space:nowrap;background:rgba(${catRgb},0.12);color:${catColor};border:1px solid rgba(${catRgb},0.28);">${esc(cat)}</span>
+          ${r.hits > 0 ? `<span style="font-size:0.58rem;font-family:'DM Mono',monospace;background:rgba(245,158,11,0.10);color:#f59e0b;border-radius:7px;padding:1px 5px;">${r.hits}×</span>` : ''}
+          ${!isEnabled ? `<span style="font-size:0.55rem;color:var(--muted);font-style:italic;">disabled</span>` : ''}
+        </div>
+      </div>
+      <div class="rp-rule-btns">
+        <button class="rp-btn rp-edit" title="Edit rule">✎</button>
+        <button class="rp-btn rp-del"  title="Delete rule">✕</button>
+      </div>`;
+
+    // ── Inline edit row ──
+    const editDiv = document.createElement('div');
+    editDiv.className = 'rp-edit-area';
+    // Build category select options
+    const catSelectId = 'rp-cat-sel-' + r.id;
+    const CS_CATS = ['Reduction','Assimilation','Linking','Elision','Contraction','Intrusion','Custom'];
+    const catOpts = CS_CATS.map(c =>
+      `<option value="${esc(c)}" ${c === cat ? 'selected' : ''}>${esc(c)}</option>`
+    ).join('');
+    editDiv.innerHTML = `
+      <div class="rp-edit-label">Edit Rule</div>
+      <div class="rp-edit-field">
+        <label>Original phrase</label>
+        <input class="rp-inp-orig" value="${esc(r.orig)}" placeholder="e.g. want to">
+      </div>
+      <div class="rp-edit-field">
+        <label>Connected form</label>
+        <input class="rp-inp-form rp-edit-form-inp" value="${esc(r.form)}" placeholder="e.g. wanna">
+      </div>
+      <div class="rp-edit-field">
+        <label>Category</label>
+        <select id="${catSelectId}">${catOpts}</select>
+      </div>
+      <div class="rp-edit-field">
+        <label>Note (optional)</label>
+        <input class="rp-inp-note" value="${esc(r.note || '')}" placeholder="e.g. reduction in fast speech">
+      </div>
+      <div class="rp-edit-actions">
+        <button class="rp-save-btn">Save</button>
+        <button class="rp-cancel-btn">Cancel</button>
+      </div>`;
+
+    row.appendChild(viewDiv);
+    row.appendChild(editDiv);
+
+    // Open / close edit
+    viewDiv.querySelector('.rp-edit').addEventListener('click', e => {
+      e.stopPropagation();
+      const isOpen = editDiv.style.display !== 'none';
+      // Close any other open edit areas
+      list.querySelectorAll('.rp-edit-area').forEach(el => { el.style.display = 'none'; });
+      editDiv.style.display = isOpen ? 'none' : '';
+      if (!isOpen) editDiv.querySelector('.rp-inp-orig').focus();
+    });
+
+    // Save edit
+    editDiv.querySelector('.rp-save-btn').addEventListener('click', () => {
+      const newOrig = editDiv.querySelector('.rp-inp-orig').value.trim();
+      const newForm = editDiv.querySelector('.rp-inp-form').value.trim();
+      const newNote = editDiv.querySelector('.rp-inp-note').value.trim();
+      const newCat  = editDiv.querySelector('select')?.value || 'Custom';
+      if (!newOrig || !newForm) { hlToast('⚠ Original and Connected form are required'); return; }
+      const all = csRulesLoad();
+      const idx = all.findIndex(x => x.id === r.id);
+      if (idx === -1) { hlToast('⚠ Rule not found'); return; }
+      if (all.some((x, i) => i !== idx && x.orig.toLowerCase() === newOrig.toLowerCase())) {
+        hlToast('⚠ A rule for "' + newOrig + '" already exists'); return;
+      }
+      all[idx].orig = newOrig; all[idx].form = newForm;
+      all[idx].note = newNote; all[idx].category = newCat;
+      csRulesSave(all);
+      hlToast('✓ Rule updated: "' + newOrig + '" → "' + newForm + '"');
+      // Re-apply CS highlights so the chapter reflects the change
+      if (peraSettings.csActive && document.getElementById('reader-view')?.style.display === 'block') {
+        csApplyHighlights();
+      }
+      // Refresh both panels
+      rpRender();
+      if (document.getElementById('mv-panel-rules')?.classList.contains('active')) csRulesRender();
+    });
+
+    // Cancel edit
+    editDiv.querySelector('.rp-cancel-btn').addEventListener('click', () => {
+      editDiv.style.display = 'none';
+    });
+
+    // Enter / Escape in edit inputs
+    editDiv.querySelectorAll('input').forEach(inp => {
+      inp.addEventListener('keydown', e => {
+        if (e.key === 'Enter')  { e.preventDefault(); editDiv.querySelector('.rp-save-btn').click(); }
+        if (e.key === 'Escape') { e.preventDefault(); editDiv.style.display = 'none'; }
+      });
+    });
+
+    // Delete rule
+    viewDiv.querySelector('.rp-del').addEventListener('click', () => {
+      if (!confirm('Delete rule "' + r.orig + '"?')) return;
+      csRulesSave(csRulesLoad().filter(x => x.id !== r.id));
+      hlToast('Rule removed');
+      if (peraSettings.csActive && document.getElementById('reader-view')?.style.display === 'block') {
+        csApplyHighlights();
+      }
+      rpRender();
+      if (document.getElementById('mv-panel-rules')?.classList.contains('active')) csRulesRender();
+    });
+
+    list.appendChild(row);
+  });
+}
+
+// Navigate to My Vocab → Rules tab and close this panel
+function rpGoToVocabRules() {
+  toggleRulePanel();
+  showHome();
+  setTimeout(() => { switchHomeTab('myvocab'); mvSwitchTab('rules'); }, 80);
 }
 
 function hlpSetFilter(lv, btn) {
@@ -13793,7 +14172,9 @@ function _hlpApplyHiddenToReader() {
 // Called after every chapter load — also apply hidden state
 function _hlpRefreshAfterChapterLoad() {
   _hlpApplyHiddenToReader();
-  if (_hlPanelOpen) { _hlPanelSel.clear(); hlpRender(); }
+  if (_hlPanelOpen)   { _hlPanelSel.clear(); hlpRender(); }
+  // Delay rules panel render until after csApplyHighlights() has populated _csMatchCounts
+  if (_rulePanelOpen) { setTimeout(rpRender, 80); }
 }
 
 // ── Highlights Grid Tab ─────────────────────────────
